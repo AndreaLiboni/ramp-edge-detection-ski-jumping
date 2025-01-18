@@ -1,25 +1,21 @@
 DATA:
-    DIR: "data/training/"
-    VAL_DIR: "data/training/"
-    TEST_DIR: "data/NKL"
-    LABEL_FILE: "data/training/nkl_train.txt"
-    VAL_LABEL_FILE: "data/training/nkl_val.txt"
-    TEST_LABEL_FILE: "data/training/nkl_test.txt"
-    # DIR: "data/training/"
-    # VAL_DIR: "data/training/"
-    # TEST_DIR: "data/training"
-    # LABEL_FILE: "data/training/train_1716_100_100.txt"
-    # VAL_LABEL_FILE: "data/training/test_1716_100_100.txt"
-    # TEST_LABEL_FILE: "data/training/test_1716_100_100.txt"
+    DIR: "data/SkiTB/"
+    VAL_DIR: "data/SkiTB/"
+    TEST_DIR: "data/SkiTB/"
+    LABEL_FILE: "data/training/train_idx.txt"
+    VAL_LABEL_FILE: "data/training/test_idx.txt"
+    TEST_LABEL_FILE: "data/training/train_idx.txt"
     BATCH_SIZE: 8
     WORKERS: 4
 
 OPTIMIZER:
-    LR: 2e-4
+    LR: 1e-2
     MOMENTUM: 0.9
     GAMMA: 0.1
-    WEIGHT_DECAY: 0
+    WEIGHT_DECAY: 1e-2
     STEPS: []
+    LR_START: 5e-4  #5e-3
+    LR_END: 5e-5    #1e-3
 
 MODEL:
     NUMANGLE: 100
@@ -31,13 +27,13 @@ MODEL:
     # only support : resnet18, resnet50, resnet101, mobilenetv2, resnext50, res2net50, vgg16
 
 TRAIN:
-    EPOCHS: 30
-    PRINT_FREQ: 100
+    EPOCHS: 60
+    PRINT_FREQ: 20
     TEST: False
-    SEED: 1997
+    SEED: 
     GPU_ID: 0
-    DATA_PARALLEL: False
+    DATA_PARALLEL: True
     RESUME: 
 
 MISC:
-    TMP: "./result/reproduce"
+    TMP: "./model_output"

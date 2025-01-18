@@ -49,12 +49,53 @@ class Net(nn.Module):
             self.dht_detector3 = DHT_Layer(256, 128, numAngle=numAngle, numRho=numRho // 4)
             self.dht_detector4 = DHT_Layer(256, 128, numAngle=numAngle, numRho=numRho // (output_stride // 4))
             
-            self.last_conv = nn.Sequential(
-                nn.Conv2d(512, 1, 1)
-            )
+            # self.last_conv = nn.Sequential(
+            #     nn.Conv2d(512, 1, 1)
+            # )
 
         self.numAngle = numAngle
         self.numRho = numRho
+        # self.segment_pred = nn.Sequential(
+        #     nn.Conv2d(512, 8, kernel_size=1),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Flatten(),
+        #     nn.Linear(8 * 100 * 100, 512),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Linear(512, 256),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Linear(256, 128),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Linear(128, 64),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Linear(64, 16),
+        #     nn.LeakyReLU(inplace=True),
+        #     nn.Linear(16, 4),
+        #     nn.LeakyReLU(inplace=True),
+        # )
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(512, 256, kernel_size=3),
+            # nn.BatchNorm2d(256),
+            nn.LeakyReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(256, 128, kernel_size=3),
+            # nn.BatchNorm2d(8),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(128, 32, kernel_size=3),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(32, 8, kernel_size=3),
+            nn.LeakyReLU(inplace=True),
+            # nn.AdaptiveAvgPool2d((50, 50)),
+            nn.Flatten()
+        )
+
+        self.fc_layers = nn.Sequential(
+            nn.Linear(8 * 43 * 43, 64),
+            # nn.BatchNorm1d(128),
+            nn.LeakyReLU(inplace=True),
+            #nn.Dropout(p=0.5),
+            nn.Linear(64, 4),
+            nn.LeakyReLU(inplace=True),
+        )
 
     def upsample_cat(self, p1, p2, p3, p4):
         p1 = nn.functional.interpolate(p1, size=(self.numAngle, self.numRho), mode='bilinear')
@@ -64,14 +105,20 @@ class Net(nn.Module):
         return torch.cat([p1, p2, p3, p4], dim=1)
 
     def forward(self, x):
+        # x = [batch_size, channel, height, width]
         p1, p2, p3, p4 = self.backbone(x)
+        # [batch_size, num_conv, height, width]
+        # p1 100, 100 height, width
+        # p2 50, 50
+        # p3 25, 25
+        # p4 25, 25
       
         p1 = self.dht_detector1(p1)
         p2 = self.dht_detector2(p2)
         p3 = self.dht_detector3(p3)
         p4 = self.dht_detector4(p4)
 
-        cat = self.upsample_cat(p1, p2, p3, p4)
-        logist = self.last_conv(cat)
-
-        return logist
+        out = self.upsample_cat(p1, p2, p3, p4)
+        out = self.conv_layers(out)
+        out = self.fc_layers(out)
+        return out # [batch_size, 4] x1, y1, x2, y2

@@ -23,15 +23,21 @@ from tensorboardX import SummaryWriter
 from utils import reverse_mapping, edge_align
 from hungarian_matching import caculate_tp_fp_fn
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import cv2
+
 parser = argparse.ArgumentParser(description='PyTorch Semantic-Line Training')
 # arguments from command line
 parser.add_argument('--config', default="./config.yml", help="path to config file")
 parser.add_argument('--resume', default="", help='path to config file')
 parser.add_argument('--tmp', default="", help='tmp')
+parser.add_argument('--model', default="", help='model checkpoint state file')
 args = parser.parse_args()
 
 assert os.path.isfile(args.config)
-CONFIGS = yaml.load(open(args.config))
+CONFIGS = yaml.load(open(args.config), Loader=yaml.FullLoader)
 
 # merge configs
 if args.tmp != "" and args.tmp != CONFIGS["MISC"]["TMP"]:
@@ -39,13 +45,18 @@ if args.tmp != "" and args.tmp != CONFIGS["MISC"]["TMP"]:
 
 CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"] = float(CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"])
 CONFIGS["OPTIMIZER"]["LR"] = float(CONFIGS["OPTIMIZER"]["LR"])
+CONFIGS["OPTIMIZER"]["LR_START"] = float(CONFIGS["OPTIMIZER"]["LR_START"])
+CONFIGS["OPTIMIZER"]["LR_END"] = float(CONFIGS["OPTIMIZER"]["LR_END"])
 
 os.makedirs(CONFIGS["MISC"]["TMP"], exist_ok=True)
 logger = Logger(os.path.join(CONFIGS["MISC"]["TMP"], "log.txt"))
 
-
-
 logger.info(CONFIGS)
+
+untrasform = torchvision.transforms.Compose([
+    torchvision.transforms.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+    torchvision.transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ]),
+])
 
 def main():
 
@@ -66,16 +77,20 @@ def main():
         model = model.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
 
     # optimizer
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=CONFIGS["OPTIMIZER"]["LR"],
         weight_decay=CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"]
     )
 
     # learning rate scheduler
-    scheduler = lr_scheduler.MultiStepLR(optimizer,
-                            milestones=CONFIGS["OPTIMIZER"]["STEPS"],
-                            gamma=CONFIGS["OPTIMIZER"]["GAMMA"])
+    # scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=CONFIGS["OPTIMIZER"]["STEPS"], gamma=CONFIGS["OPTIMIZER"]["GAMMA"])
+    scheduler = lr_scheduler.LinearLR(
+        optimizer,
+        start_factor=CONFIGS["OPTIMIZER"]["LR_START"],
+        end_factor=CONFIGS["OPTIMIZER"]["LR_END"],
+        total_iters=CONFIGS["TRAIN"]["EPOCHS"]
+    )
     best_acc1 = 0
     if args.resume:
         if isfile(args.resume):
@@ -89,6 +104,17 @@ def main():
                   .format(args.resume, checkpoint['epoch']))
         else:
             logger.info("=> no checkpoint found at '{}'".format(args.resume))
+    
+    if args.model:
+        if isfile(args.model):
+            logger.info("=> loading model '{}'".format(args.model))
+            try:
+                model.load_state_dict(torch.load(args.model, weights_only=True))
+            except:
+                model.load_state_dict(torch.load(args.model)['state_dict'])
+            logger.info("=> loaded model '{}'".format(args.model))
+        else:
+            logger.info("=> no model found at '{}'".format(args.model))
 
     # dataloader
     train_loader = get_loader(CONFIGS["DATA"]["DIR"], CONFIGS["DATA"]["LABEL_FILE"], 
@@ -107,8 +133,8 @@ def main():
     is_best = False
     start_time = time.time()
 
-    if CONFIGS["TRAIN"]["RESUME"] is not None:
-        raise(NotImplementedError)
+    # if CONFIGS["TRAIN"]["RESUME"] is not None:
+    #     raise(NotImplementedError)
     
     if CONFIGS["TRAIN"]["TEST"]:
         validate(val_loader, model, 0, writer, args)
@@ -116,18 +142,26 @@ def main():
 
     logger.info("Start training.")
 
+    epochs_loss = []
+    epochs_acc = []
     for epoch in range(start_epoch, CONFIGS["TRAIN"]["EPOCHS"]):
         
-        train(train_loader, model, optimizer, epoch, writer, args)
+        loss = train(train_loader, model, optimizer, epoch, writer, args)
         acc = validate(val_loader, model, epoch, writer, args)
+        epochs_loss.append(loss if loss < 0.001 else 0.001)
+        epochs_acc.append(acc)
         #return
-        scheduler.step()
 
+        scheduler.step()
         if best_acc < acc:
             is_best = True
             best_acc = acc
         else:
             is_best = False
+        
+        print('last_lr:' + str(scheduler.get_last_lr()))
+        print('best_acc:' + str(best_acc))
+        print('loss:' + str(loss))
 
         save_checkpoint({
             'epoch': epoch + 1,
@@ -135,6 +169,8 @@ def main():
             'best_acc1': best_acc,
             'optimizer' : optimizer.state_dict()
             }, is_best, path=CONFIGS["MISC"]["TMP"])
+        
+        # model.load_state_dict(torch.load(os.path.join(CONFIGS["MISC"]["TMP"], 'model_best.pth'), weights_only=True))
 
         t = time.time() - start_time       
         elapsed = DayHourMinute(t)
@@ -147,6 +183,19 @@ def main():
                     "Remaining {remaining.days:d} days {remaining.hours:d} hours {remaining.minutes:d} minutes.".format(
                     epoch, CONFIGS["TRAIN"]["EPOCHS"], CONFIGS["MISC"]["TMP"], elapsed=elapsed, remaining=remaining))
 
+        df = pd.DataFrame(epochs_loss).plot()
+        plt.xlabel('Epoch ' + str(epoch))
+        plt.ylabel('Loss (max 0.001)')
+        plt.savefig('model_output/loss.png')
+        plt.close()
+        
+        df = pd.DataFrame(epochs_acc).plot()
+        plt.xlabel('Epoch ' + str(epoch))
+        plt.ylabel('Accuracy (%)')
+        plt.savefig('model_output/accuracy.png')
+        plt.close()
+        
+
     logger.info("Optimization done, ALL results saved to %s." % CONFIGS["MISC"]["TMP"])
 
 def train(train_loader, model, optimizer, epoch, writer, args):
@@ -156,49 +205,60 @@ def train(train_loader, model, optimizer, epoch, writer, args):
     bar = tqdm.tqdm(train_loader)
     iter_num = len(train_loader.dataset) // CONFIGS["DATA"]["BATCH_SIZE"]
 
-    total_loss_hough = 0
+    total_loss = 0
+    criterion = nn.MSELoss()
     for i, data in enumerate(bar):
-
-        images, hough_space_label, _, names = data
+        optimizer.zero_grad()
+        images, lines, names, flipped = data
 
         if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
             images = images.cuda()
-            hough_space_label = hough_space_label.cuda()
+            lines = lines.cuda()
         else:
             images = images.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
-            hough_space_label = hough_space_label.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
-            
-        keypoint_map = model(images)
+            lines = lines.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
 
-        hough_space_loss = torch.nn.functional.binary_cross_entropy_with_logits(keypoint_map, hough_space_label)
+        predicted_lines = model(images)
 
-        writer.add_scalar('train/hough_space_loss', hough_space_loss.item(), epoch * iter_num + i)
+        loss = criterion(predicted_lines, lines)
 
-        loss = hough_space_loss
+        # writer.add_scalar('train/lines', lines.item(), epoch * iter_num + i)
 
-        if not torch.isnan(hough_space_loss):
-            total_loss_hough += hough_space_loss.item()
+        original_loss = loss
+        loss_item = loss.item()
+        loss = original_loss
+        if not torch.isnan(loss):
+            total_loss += loss_item
         else:
             logger.info("Warnning: loss is Nan.")
 
         #record loss
-        bar.set_description('Training Loss:{}'.format(loss.item()))
+        bar.set_description('Training Loss:{}'.format(loss_item))
         
         # compute gradient and do SGD step
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         if i % CONFIGS["TRAIN"]["PRINT_FREQ"] == 0:
-            visualize_save_path = os.path.join(CONFIGS["MISC"]["TMP"], 'visualize', str(epoch))
+            visualize_save_path = os.path.join(CONFIGS["MISC"]["TMP"], 'visualize', 'train', str(epoch))
             os.makedirs(visualize_save_path, exist_ok=True)
             
             # Do visualization.
-            # torchvision.utils.save_image(torch.sigmoid(keypoint_map), join(visualize_save_path, 'rodon_'+names[0]), normalize=True)
-            # torchvision.utils.save_image(torch.sum(vis, dim=1, keepdim=True), join(visualize_save_path, 'vis_'+names[0]), normalize=True)
+            for model_input, predicted_line, line, name in zip(images, predicted_lines, lines, names):
+                img = untrasform(model_input.cpu().detach()) * 255
+                img = np.transpose(img.numpy(), (1, 2, 0))
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    total_loss_hough = total_loss_hough / iter_num
-    writer.add_scalar('train/total_loss_hough', total_loss_hough, epoch)
+                predicted_line_norm = predicted_line.cpu().detach().numpy() * 400
+                line_norm = line.cpu().detach().numpy() * 400
+                img = cv2.line(img, (int(predicted_line_norm[0]), int(predicted_line_norm[1])), (int(predicted_line_norm[2]), int(predicted_line_norm[3])), (255, 255, 0), thickness=2)
+                img = cv2.line(img, (int(line_norm[0]), int(line_norm[1])), (int(line_norm[2]), int(line_norm[3])), (255, 0, 255), thickness=2)
+                cv2.imwrite(os.path.join(visualize_save_path, name), img)
+                break
+    
+    total_loss /= iter_num
+    writer.add_scalar('train/total_loss', total_loss, epoch)
+    return total_loss
  
 
     
@@ -206,7 +266,7 @@ def validate(val_loader, model, epoch, writer, args):
     # switch to evaluate mode
     model.eval()
     total_acc = 0.0
-    total_loss_hough = 0
+    total_loss = 0
 
     total_tp = np.zeros(99)
     total_fp = np.zeros(99)
@@ -221,63 +281,63 @@ def validate(val_loader, model, epoch, writer, args):
         iter_num = len(val_loader.dataset) // 1
         for i, data in enumerate(bar):
 
-            images, hough_space_label8, gt_coords, names = data
+            images, lines, names, flipped = data
 
             if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
                 images = images.cuda()
-                hough_space_label8 = hough_space_label8.cuda()
+                lines = lines.cuda()
             else:
                 images = images.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
-                hough_space_label8 = hough_space_label8.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
+                lines = lines.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
                 
-            keypoint_map = model(images)
+            predicted_lines = model(images)
 
-            hough_space_loss = torch.nn.functional.binary_cross_entropy_with_logits(keypoint_map, hough_space_label8)
-            writer.add_scalar('val/hough_space_loss', hough_space_loss.item(), epoch * iter_num + i)
+            loss = torch.nn.functional.binary_cross_entropy_with_logits(predicted_lines, lines)
+            original_loss = loss
+            loss_item = loss.item()
+            loss = original_loss
+            writer.add_scalar('val/loss', loss_item, epoch * iter_num + i)
 
             acc = 0
             total_acc += acc
 
-            loss = hough_space_loss
             if not torch.isnan(loss):
-                total_loss_hough += loss.item()
+                total_loss += loss_item
             else:
                 logger.info("Warnning: val loss is Nan.")
 
-            key_points = torch.sigmoid(keypoint_map)
-            binary_kmap = key_points.squeeze().cpu().numpy() > CONFIGS['MODEL']['THRESHOLD']
-            kmap_label = label(binary_kmap, connectivity=1)
-            props = regionprops(kmap_label)
-            plist = []
-            for prop in props:
-                plist.append(prop.centroid)
-            b_points = reverse_mapping(plist, numAngle=CONFIGS["MODEL"]["NUMANGLE"], numRho=CONFIGS["MODEL"]["NUMRHO"], size=(400, 400))
-            # [[y1, x1, y2, x2], [] ...]
-            gt_coords = gt_coords[0].tolist()
-            for i in range(1, 100):
-                tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=i*0.01)
-                total_tp[i-1] += tp
-                total_fp[i-1] += fp
-                total_fn[i-1] += fn
+            b_points = [[point * 400 for point in predicted_lines[0].cpu()]]
+            gt_coords = [[point * 400 for point in lines[0].cpu()]]
 
-            if CONFIGS["MODEL"]["EDGE_ALIGN"]:
-                for i in range(len(b_points)):
-                    b_points[i] = edge_align(b_points[i], names[0], division=5)
+            for j in range(1, 100):
+                tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=j*0.01)
+                total_tp[j-1] += tp
+                total_fp[j-1] += fp
+                total_fn[j-1] += fn
+
+            if i == 0:
+                img = untrasform(images[0].cpu().detach()) * 255
+                img = np.transpose(img.numpy(), (1, 2, 0))
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                predicted_line_norm = predicted_lines[0].cpu().detach().numpy() * 400
+                line_norm = lines[0].cpu().detach().numpy() * 400
+                img = cv2.line(img, (int(predicted_line_norm[0]), int(predicted_line_norm[1])), (int(predicted_line_norm[2]), int(predicted_line_norm[3])), (255, 255, 0), thickness=2)
+                img = cv2.line(img, (int(line_norm[0]), int(line_norm[1])), (int(line_norm[2]), int(line_norm[3])), (255, 0, 255), thickness=2)
                 
-                for i in range(1, 100):
-                    tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=i*0.01)
-                    total_tp_align[i-1] += tp
-                    total_fp_align[i-1] += fp
-                    total_fn_align[i-1] += fn
+                visualize_save_path = os.path.join(CONFIGS["MISC"]["TMP"], 'visualize', 'test')
+                os.makedirs(visualize_save_path, exist_ok=True)
+                cv2.imwrite(os.path.join(visualize_save_path, str(epoch) + '.jpg'), img)
+                # cv2.imwrite(os.path.join(visualize_save_path, names[0]), img)
             
-        total_loss_hough = total_loss_hough / iter_num
+        total_loss /= iter_num
         
         total_recall = total_tp / (total_tp + total_fn + 1e-8)
         total_precision = total_tp / (total_tp + total_fp + 1e-8)
         f = 2 * total_recall * total_precision / (total_recall + total_precision + 1e-8)
         
        
-        writer.add_scalar('val/total_loss_hough', total_loss_hough, epoch)
+        writer.add_scalar('val/total_loss', total_loss, epoch)
         writer.add_scalar('val/total_precison', total_precision.mean(), epoch)
         writer.add_scalar('val/total_recall', total_recall.mean(), epoch)
         logger.info('Validation result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
@@ -287,25 +347,14 @@ def validate(val_loader, model, epoch, writer, args):
         writer.add_scalar('val/f-measure', acc.mean(), epoch)
         writer.add_scalar('val/f-measure@0.95', f[95 - 1], epoch)
         
-        if CONFIGS["MODEL"]["EDGE_ALIGN"]:
-            total_recall_align = total_tp_align / (total_tp_align + total_fn_align + 1e-8)
-            total_precision_align = total_tp_align / (total_tp_align + total_fp_align + 1e-8)
-            f_align = 2 * total_recall_align * total_precision_align / (total_recall_align + total_precision_align + 1e-8)
-            writer.add_scalar('val/total_precison_align', total_precision_align.mean(), epoch)
-            writer.add_scalar('val/total_recall_align', total_recall_align.mean(), epoch)
-            logger.info('Validation result (Aligned): ==== Precision: %.5f, Recall: %.5f' % (total_precision_align.mean(), total_recall_align.mean()))
-            acc = f_align.mean()
-            logger.info('Validation result (Aligned): ==== F-measure: %.5f' % acc.mean())
-            logger.info('Validation result (Aligned): ==== F-measure@0.95: %.5f' % f_align[95 - 1])
-            writer.add_scalar('val/f-measure', acc.mean(), epoch)
-            writer.add_scalar('val/f-measure@0.95', f_align[95 - 1], epoch)
     return acc.mean()
 
 
 def save_checkpoint(state, is_best, path, filename='checkpoint.pth.tar'):
-    torch.save(state, os.path.join(path, filename))
+    # torch.save(state, os.path.join(path, filename))
     if is_best:
-        shutil.copyfile(os.path.join(path, filename), os.path.join(path, 'model_best.pth'))
+        torch.save(state['state_dict'], os.path.join(path, 'model_best.pth'))
+    torch.save(state['state_dict'], os.path.join(path, 'model_last.pth'))
 
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:

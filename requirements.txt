@@ -1,0 +1,13 @@
+numpy
+scipy
+opencv-python
+scikit-image
+torch>=1.0
+torchvision
+tqdm
+yml
+POT
+matplotlib
+pyyaml==5.3.1
+tensorboardX
+pandas

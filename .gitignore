@@ -1,0 +1,8 @@
+venv
+
+data
+model_output
+model_output_*
+*.pth
+*.egg-info
+__pycache__
