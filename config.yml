@@ -9,7 +9,6 @@ DATA:
     WORKERS: 4
 
 OPTIMIZER:
-    LR: 1e-2
     MOMENTUM: 0.9
     GAMMA: 0.1
     WEIGHT_DECAY: 1e-2
@@ -31,9 +30,9 @@ TRAIN:
     PRINT_FREQ: 20
     TEST: False
     SEED: 
-    GPU_ID: 0
     DATA_PARALLEL: True
     RESUME: 
+    COMPUTE_ACC: False
 
 MISC:
     TMP: "./model_output"

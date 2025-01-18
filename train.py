@@ -28,15 +28,15 @@ import matplotlib.pyplot as plt
 
 import cv2
 
-parser = argparse.ArgumentParser(description='PyTorch Semantic-Line Training')
 # arguments from command line
+parser = argparse.ArgumentParser(description='PyTorch Semantic-Line Training')
 parser.add_argument('--config', default="./config.yml", help="path to config file")
 parser.add_argument('--resume', default="", help='path to config file')
-parser.add_argument('--tmp', default="", help='tmp')
+parser.add_argument('--tmp', default="", help='tmp folder to save results')
 parser.add_argument('--model', default="", help='model checkpoint state file')
 args = parser.parse_args()
 
-assert os.path.isfile(args.config)
+# arguments from config file
 CONFIGS = yaml.load(open(args.config), Loader=yaml.FullLoader)
 
 # merge configs
@@ -44,7 +44,6 @@ if args.tmp != "" and args.tmp != CONFIGS["MISC"]["TMP"]:
     CONFIGS["MISC"]["TMP"] = args.tmp
 
 CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"] = float(CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"])
-CONFIGS["OPTIMIZER"]["LR"] = float(CONFIGS["OPTIMIZER"]["LR"])
 CONFIGS["OPTIMIZER"]["LR_START"] = float(CONFIGS["OPTIMIZER"]["LR_START"])
 CONFIGS["OPTIMIZER"]["LR_END"] = float(CONFIGS["OPTIMIZER"]["LR_END"])
 
@@ -52,11 +51,6 @@ os.makedirs(CONFIGS["MISC"]["TMP"], exist_ok=True)
 logger = Logger(os.path.join(CONFIGS["MISC"]["TMP"], "log.txt"))
 
 logger.info(CONFIGS)
-
-untrasform = torchvision.transforms.Compose([
-    torchvision.transforms.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
-    torchvision.transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ]),
-])
 
 def main():
 
@@ -68,18 +62,20 @@ def main():
         torch.manual_seed(CONFIGS['TRAIN']['SEED'])
         cudnn.deterministic = True
 
-    model = Net(numAngle=CONFIGS["MODEL"]["NUMANGLE"], numRho=CONFIGS["MODEL"]["NUMRHO"], backbone=CONFIGS["MODEL"]["BACKBONE"])
+    model = Net(
+        numAngle=CONFIGS["MODEL"]["NUMANGLE"],
+        numRho=CONFIGS["MODEL"]["NUMRHO"],
+        backbone=CONFIGS["MODEL"]["BACKBONE"]
+    )
     
     if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
         logger.info("Model Data Parallel")
         model = nn.DataParallel(model).cuda()
-    else:
-        model = model.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
 
     # optimizer
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=CONFIGS["OPTIMIZER"]["LR"],
+        lr=CONFIGS["OPTIMIZER"]["LR_START"],
         weight_decay=CONFIGS["OPTIMIZER"]["WEIGHT_DECAY"]
     )
 
@@ -91,36 +87,57 @@ def main():
         end_factor=CONFIGS["OPTIMIZER"]["LR_END"],
         total_iters=CONFIGS["TRAIN"]["EPOCHS"]
     )
-    best_acc1 = 0
+    best_acc = 0
+    start_epoch = 0
+    train_epochs_loss = []
+    train_epochs_acc = []
+    test_epochs_loss = []
+    test_epochs_acc = []
     if args.resume:
         if isfile(args.resume):
             logger.info("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
-            best_acc1 = checkpoint['best_acc1']
+            start_epoch = checkpoint['epoch']
+            best_acc = checkpoint['best_acc']
+
+            train_epochs_loss = checkpoint['train_epochs_loss']
+            train_epochs_acc = checkpoint['train_epochs_acc']
+            test_epochs_loss = checkpoint['test_epochs_loss']
+            test_epochs_acc = checkpoint['test_epochs_acc']
+
             model.load_state_dict(checkpoint['state_dict'])
-            # optimizer.load_state_dict(checkpoint['optimizer'])
-            logger.info("=> loaded checkpoint '{}' (epoch {})"
-                  .format(args.resume, checkpoint['epoch']))
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
         else:
             logger.info("=> no checkpoint found at '{}'".format(args.resume))
+            return
     
-    if args.model:
-        if isfile(args.model):
-            logger.info("=> loading model '{}'".format(args.model))
-            try:
-                model.load_state_dict(torch.load(args.model, weights_only=True))
-            except:
-                model.load_state_dict(torch.load(args.model)['state_dict'])
-            logger.info("=> loaded model '{}'".format(args.model))
-        else:
-            logger.info("=> no model found at '{}'".format(args.model))
+    # if args.model:
+    #     if isfile(args.model):
+    #         logger.info("=> loading model '{}'".format(args.model))
+    #         try:
+    #             model.load_state_dict(torch.load(args.model, weights_only=True))
+    #         except:
+    #             model.load_state_dict(torch.load(args.model)['state_dict'])
+    #         logger.info("=> loaded model '{}'".format(args.model))
+    #     else:
+    #         logger.info("=> no model found at '{}'".format(args.model))
 
     # dataloader
-    train_loader = get_loader(CONFIGS["DATA"]["DIR"], CONFIGS["DATA"]["LABEL_FILE"], 
-                                batch_size=CONFIGS["DATA"]["BATCH_SIZE"], num_thread=CONFIGS["DATA"]["WORKERS"], split='train')
-    val_loader = get_loader(CONFIGS["DATA"]["VAL_DIR"], CONFIGS["DATA"]["VAL_LABEL_FILE"], 
-                                batch_size=1, num_thread=CONFIGS["DATA"]["WORKERS"], split='val')
+    train_loader = get_loader(
+        root_dir=CONFIGS["DATA"]["DIR"], 
+        test=False,
+        batch_size=CONFIGS["DATA"]["BATCH_SIZE"],
+        shuffle=True,
+        num_workers=CONFIGS["DATA"]["WORKERS"]
+    )
+    test_loader = get_loader(
+        root_dir=CONFIGS["DATA"]["DIR"], 
+        test=True,
+        batch_size=1,
+        shuffle=False,
+        num_workers=CONFIGS["DATA"]["WORKERS"]
+    )
 
     logger.info("Data loading done.")
 
@@ -128,8 +145,6 @@ def main():
 
     writer = SummaryWriter(log_dir=os.path.join(CONFIGS["MISC"]["TMP"]))
 
-    start_epoch = 0
-    best_acc = best_acc1
     is_best = False
     start_time = time.time()
 
@@ -137,38 +152,43 @@ def main():
     #     raise(NotImplementedError)
     
     if CONFIGS["TRAIN"]["TEST"]:
-        validate(val_loader, model, 0, writer, args)
+        validate(test_loader, model, 0, writer, args)
         return
 
     logger.info("Start training.")
 
-    epochs_loss = []
-    epochs_acc = []
     for epoch in range(start_epoch, CONFIGS["TRAIN"]["EPOCHS"]):
         
-        loss = train(train_loader, model, optimizer, epoch, writer, args)
-        acc = validate(val_loader, model, epoch, writer, args)
-        epochs_loss.append(loss if loss < 0.001 else 0.001)
-        epochs_acc.append(acc)
+        train_loss, train_acc = train(train_loader, model, optimizer, epoch, writer, args)
+        test_loss, test_acc = validate(test_loader, model, epoch, writer, args)
+
+        train_epochs_loss.append(train_loss)
+        train_epochs_acc.append(train_acc)
+        test_epochs_loss.append(test_loss)
+        test_epochs_acc.append(test_acc)
         #return
 
         scheduler.step()
-        if best_acc < acc:
+        if best_acc < test_acc:
             is_best = True
-            best_acc = acc
+            best_acc = test_acc
         else:
             is_best = False
         
         print('last_lr:' + str(scheduler.get_last_lr()))
         print('best_acc:' + str(best_acc))
-        print('loss:' + str(loss))
+        print('loss:' + str(train_loss))
 
         save_checkpoint({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
-            'best_acc1': best_acc,
-            'optimizer' : optimizer.state_dict()
-            }, is_best, path=CONFIGS["MISC"]["TMP"])
+            'best_acc': best_acc,
+            'optimizer' : optimizer.state_dict(),
+            'train_epochs_loss': train_epochs_loss,
+            'train_epochs_acc': train_epochs_acc,
+            'test_epochs_loss': test_epochs_loss,
+            'test_epochs_acc': test_epochs_acc
+        }, is_best, path=CONFIGS["MISC"]["TMP"])
         
         # model.load_state_dict(torch.load(os.path.join(CONFIGS["MISC"]["TMP"], 'model_best.pth'), weights_only=True))
 
@@ -183,13 +203,13 @@ def main():
                     "Remaining {remaining.days:d} days {remaining.hours:d} hours {remaining.minutes:d} minutes.".format(
                     epoch, CONFIGS["TRAIN"]["EPOCHS"], CONFIGS["MISC"]["TMP"], elapsed=elapsed, remaining=remaining))
 
-        df = pd.DataFrame(epochs_loss).plot()
+        df = pd.DataFrame(train_epochs_loss).plot()
         plt.xlabel('Epoch ' + str(epoch))
         plt.ylabel('Loss (max 0.001)')
         plt.savefig('model_output/loss.png')
         plt.close()
         
-        df = pd.DataFrame(epochs_acc).plot()
+        df = pd.DataFrame(test_epochs_acc).plot()
         plt.xlabel('Epoch ' + str(epoch))
         plt.ylabel('Accuracy (%)')
         plt.savefig('model_output/accuracy.png')
@@ -206,34 +226,47 @@ def train(train_loader, model, optimizer, epoch, writer, args):
     iter_num = len(train_loader.dataset) // CONFIGS["DATA"]["BATCH_SIZE"]
 
     total_loss = 0
+
+    total_tp = np.zeros(99)
+    total_fp = np.zeros(99)
+    total_fn = np.zeros(99)
+
+    total_tp_align = np.zeros(99)
+    total_fp_align = np.zeros(99)
+    total_fn_align = np.zeros(99)
+
     criterion = nn.MSELoss()
+    untransform = train_loader.dataset.untransform
     for i, data in enumerate(bar):
         optimizer.zero_grad()
-        images, lines, names, flipped = data
+        images, lines, names = data
 
         if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
             images = images.cuda()
             lines = lines.cuda()
-        else:
-            images = images.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
-            lines = lines.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
 
         predicted_lines = model(images)
 
         loss = criterion(predicted_lines, lines)
 
-        # writer.add_scalar('train/lines', lines.item(), epoch * iter_num + i)
-
-        original_loss = loss
-        loss_item = loss.item()
-        loss = original_loss
         if not torch.isnan(loss):
-            total_loss += loss_item
+            total_loss += loss.item()
         else:
             logger.info("Warnning: loss is Nan.")
 
         #record loss
-        bar.set_description('Training Loss:{}'.format(loss_item))
+        bar.set_description('Training Loss:{}'.format(loss.item()))
+
+        # compute accuracy
+        if CONFIGS["TRAIN"]["COMPUTE_ACC"]:
+            b_points = [[point * 400 for point in predicted_line] for predicted_line in predicted_lines.detach().cpu()]
+            gt_coords = [[point * 400 for point in line] for line in lines.detach().cpu()]
+
+            for j in range(1, 100):
+                tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=j*0.01)
+                total_tp[j-1] += tp
+                total_fp[j-1] += fp
+                total_fn[j-1] += fn
         
         # compute gradient and do SGD step
         loss.backward()
@@ -245,7 +278,7 @@ def train(train_loader, model, optimizer, epoch, writer, args):
             
             # Do visualization.
             for model_input, predicted_line, line, name in zip(images, predicted_lines, lines, names):
-                img = untrasform(model_input.cpu().detach()) * 255
+                img = untransform(model_input.cpu().detach()) * 255
                 img = np.transpose(img.numpy(), (1, 2, 0))
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -257,15 +290,21 @@ def train(train_loader, model, optimizer, epoch, writer, args):
                 break
     
     total_loss /= iter_num
-    writer.add_scalar('train/total_loss', total_loss, epoch)
-    return total_loss
- 
 
+    total_recall = total_tp / (total_tp + total_fn + 1e-8)
+    total_precision = total_tp / (total_tp + total_fp + 1e-8)
+    f = 2 * total_recall * total_precision / (total_recall + total_precision + 1e-8)
+    acc = f.mean()
     
-def validate(val_loader, model, epoch, writer, args):
+    logger.info('Train result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
+    logger.info('Train result: ==== F-measure: %.5f' % acc.mean())
+    logger.info('Train result: ==== F-measure@0.95: %.5f' % f[95 - 1])
+    return total_loss, acc.mean()
+ 
+    
+def validate(test_loader, model, epoch, writer, args):
     # switch to evaluate mode
     model.eval()
-    total_acc = 0.0
     total_loss = 0
 
     total_tp = np.zeros(99)
@@ -276,30 +315,24 @@ def validate(val_loader, model, epoch, writer, args):
     total_fp_align = np.zeros(99)
     total_fn_align = np.zeros(99)
 
+    untransform = test_loader.dataset.untransform
     with torch.no_grad():
-        bar = tqdm.tqdm(val_loader)
-        iter_num = len(val_loader.dataset) // 1
+        bar = tqdm.tqdm(test_loader)
+        iter_num = len(test_loader.dataset) // 1
         for i, data in enumerate(bar):
 
-            images, lines, names, flipped = data
+            images, lines, names = data
 
             if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
                 images = images.cuda()
                 lines = lines.cuda()
-            else:
-                images = images.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
-                lines = lines.cuda(device=CONFIGS["TRAIN"]["GPU_ID"])
                 
             predicted_lines = model(images)
 
-            loss = torch.nn.functional.binary_cross_entropy_with_logits(predicted_lines, lines)
+            loss = torch.nn.functional.mse_loss(predicted_lines, lines)
             original_loss = loss
             loss_item = loss.item()
             loss = original_loss
-            writer.add_scalar('val/loss', loss_item, epoch * iter_num + i)
-
-            acc = 0
-            total_acc += acc
 
             if not torch.isnan(loss):
                 total_loss += loss_item
@@ -316,7 +349,7 @@ def validate(val_loader, model, epoch, writer, args):
                 total_fn[j-1] += fn
 
             if i == 0:
-                img = untrasform(images[0].cpu().detach()) * 255
+                img = untransform(images[0].cpu().detach()) * 255
                 img = np.transpose(img.numpy(), (1, 2, 0))
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -337,21 +370,16 @@ def validate(val_loader, model, epoch, writer, args):
         f = 2 * total_recall * total_precision / (total_recall + total_precision + 1e-8)
         
        
-        writer.add_scalar('val/total_loss', total_loss, epoch)
-        writer.add_scalar('val/total_precison', total_precision.mean(), epoch)
-        writer.add_scalar('val/total_recall', total_recall.mean(), epoch)
         logger.info('Validation result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
         acc = f.mean()
         logger.info('Validation result: ==== F-measure: %.5f' % acc.mean())
         logger.info('Validation result: ==== F-measure@0.95: %.5f' % f[95 - 1])
-        writer.add_scalar('val/f-measure', acc.mean(), epoch)
-        writer.add_scalar('val/f-measure@0.95', f[95 - 1], epoch)
         
-    return acc.mean()
+    return total_loss, acc.mean()
 
 
-def save_checkpoint(state, is_best, path, filename='checkpoint.pth.tar'):
-    # torch.save(state, os.path.join(path, filename))
+def save_checkpoint(state, is_best, path, filename='checkpoint.pth'):
+    torch.save(state, os.path.join(path, filename))
     if is_best:
         torch.save(state['state_dict'], os.path.join(path, 'model_best.pth'))
     torch.save(state['state_dict'], os.path.join(path, 'model_last.pth'))

@@ -12,14 +12,15 @@ import cv2
 
 class SkiTBDataset(Dataset):
 
-    def __init__(self, root_dir, split='train', transform=None):
-        index_file = root_dir + ('train_idx.txt' if split == 'train' else 'test_idx.txt')
-        lines = [line.rstrip('\n') for line in open(index_file)]
-        self.image_path = [join(root_dir, 'images', i + ".jpg") for i in lines]
-        self.data_path = [join(root_dir, 'labels', i + ".txt") for i in lines]
-        self.split = split
+    def __init__(self, root_dir, test, transform=None, untransform=None, output_size=(400, 400)):
+        index_file = root_dir + ('test_idx.txt' if test else 'train_idx.txt')
+        file_lines = [line.rstrip('\n') for line in open(index_file)]
+        self.image_path = [join(root_dir, 'images', i + ".jpg") for i in file_lines]
+        self.data_path = [join(root_dir, 'labels', i + ".txt") for i in file_lines]
+        self.test = test
+        self.output_size = output_size # (w, h)
         self.transform = transform
-        self.output_size = (400, 400) # (w, h)
+        self.untransform = untransform
     
     def __getitem__(self, item):
 
@@ -39,9 +40,7 @@ class SkiTBDataset(Dataset):
             line = [line[0], line[2], line[1], line[3]]
         
         # random crop the image
-        flipped = False
-        if self.split == 'train' and random.random() < 0.5:
-            flipped = True
+        if not self.test and random.random() < 0.5:
             crop_percent = random.uniform(0.1, 0.5)
             width_offset = int(img_width * crop_percent)
             height_offset = int(img_height * crop_percent)
@@ -78,108 +77,46 @@ class SkiTBDataset(Dataset):
             ]
             
         # random horizontal filp the image
-        
-        if self.split == 'train' and random.random() < 0.5:
-            #flipped = True
+        if not self.test and random.random() < 0.5:
             image = transforms.functional.hflip(image)
             line[0] = 1 - line[0]
             line[2] = 1 - line[2]
         
         # random blur the image
-        if self.split == 'train' and random.random() < 0.5:
+        if not self.test and random.random() < 0.5:
             random_kernel_size = random.choice([7, 11, 17])
             image = transforms.functional.gaussian_blur(image, kernel_size=random_kernel_size)
         
-        # random crop the image
-        
         line = torch.tensor(line)
         
-        return image, line, path_img.split('/')[-1], flipped
+        return image, line, path_img.split('/')[-1]
 
     def __len__(self):
         return len(self.image_path)
 
-    def collate_fn(self, batch):
-        images, lines, names, flipped = list(zip(*batch))
-        images = torch.stack([image for image in images])
-        lines = torch.stack([line for line in lines])
+    # def collate_fn(self, batch):
+    #     images, lines, names, flipped = list(zip(*batch))
+    #     images = torch.stack([image for image in images])
+    #     lines = torch.stack([line for line in lines])
 
-        return images, lines, names, flipped
+    #     return images, lines, names, flipped
 
-
-class SemanLineDataset(Dataset):
-
-    def __init__(self, root_dir, label_file, split='train', transform=None, t_transform=None):
-        lines = [line.rstrip('\n') for line in open(label_file)]
-        self.image_path = [join(root_dir, i+".jpg") for i in lines]
-        self.data_path = [join(root_dir, i+".npy") for i in lines]
-        self.split = split
-        self.transform = transform
-        self.t_transform = t_transform
-    
-    def __getitem__(self, item):
-
-        assert isfile(self.image_path[item]), self.image_path[item]
-        image = Image.open(self.image_path[item]).convert('RGB')
-
-        data = np.load(self.data_path[item], allow_pickle=True).item()
-        hough_space_label8 = data["hough_space_label8"].astype(np.float32)
-        if self.transform is not None:
-            image = self.transform(image)
-            
-        hough_space_label8 = torch.from_numpy(hough_space_label8).unsqueeze(0)
-        gt_coords = data["coords"]
-        
-        if self.split == 'val':
-            return image, hough_space_label8, gt_coords, self.image_path[item].split('/')[-1]
-        elif self.split == 'train':
-            return image, hough_space_label8, gt_coords, self.image_path[item].split('/')[-1]
-
-    def __len__(self):
-        return len(self.image_path)
-
-    def collate_fn(self, batch):
-        images, hough_space_label8, gt_coords, names = list(zip(*batch))
-        images = torch.stack([image for image in images])
-        hough_space_label8 = torch.stack([hough_space_label for hough_space_label in hough_space_label8])
-
-        return images, hough_space_label8, gt_coords, names
-
-class SemanLineDatasetTest(Dataset):
-
-    def __init__(self, root_dir, label_file, transform=None, t_transform=None):
-        lines = [line.rstrip('\n') for line in open(label_file)]
-        self.image_path = [join(root_dir, i+".jpg") for i in lines]
-        self.transform = transform
-        self.t_transform = t_transform
-        
-    def __getitem__(self, item):
-
-        assert isfile(self.image_path[item]), self.image_path[item]
-        image = Image.open(self.image_path[item]).convert('RGB')
-        w, h = image.size
-        if self.transform is not None:
-            image = self.transform(image)
-            
-        return image, self.image_path[item].split('/')[-1], (h, w)
-
-    def __len__(self):
-        return len(self.image_path)
-
-    def collate_fn(self, batch):
-        images, names, sizes = list(zip(*batch))
-        images = torch.stack([image for image in images])
-    
-        return images, names, sizes
-
-def get_loader(root_dir, label_file, batch_size, img_size=0, num_thread=4, pin=True, test=False, split='train'):
+def get_loader(root_dir, test, batch_size, shuffle, num_workers):
     transform = transforms.Compose([
         transforms.Resize((400, 400)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    dataset = SkiTBDataset(root_dir, transform=transform, split=split)
-    return DataLoader(dataset=dataset, batch_size=batch_size, shuffle=(split == 'train'), num_workers=num_thread,
-                                    pin_memory=pin, collate_fn=dataset.collate_fn)
+    untransform = transforms.Compose([
+        transforms.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+        transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ]),
+    ])
+    dataset = SkiTBDataset(root_dir, test, transform=transform, untransform=untransform)
+    return DataLoader(
+        dataset=dataset,
+        batch_size=batch_size,
+        shuffle=not test,
+        num_workers=num_workers,
+    )
 
         
