@@ -24,8 +24,11 @@ class SkiTBDataset(Dataset):
     
     def __getitem__(self, item):
 
-        path_img = self.image_path[item]
-        path_label = self.data_path[item]
+        index = item if self.test else item // 4
+        use_augmentation = not self.test and item % 4 != 0
+
+        path_img = self.image_path[index]
+        path_label = self.data_path[index]
 
         assert isfile(path_img), path_img
         image = Image.open(path_img).convert('RGB')
@@ -40,7 +43,7 @@ class SkiTBDataset(Dataset):
             line = [line[0], line[2], line[1], line[3]]
         
         # random crop the image
-        if not self.test and random.random() < 0.5:
+        if use_augmentation and random.random() < 0.5:
             crop_percent = random.uniform(0.1, 0.5)
             width_offset = int(img_width * crop_percent)
             height_offset = int(img_height * crop_percent)
@@ -65,6 +68,14 @@ class SkiTBDataset(Dataset):
                 line[3] - top,
             ]
             img_width, img_height = image.size
+        
+        # random color jittering
+        if use_augmentation and random.random() < 0.5:
+            image = transforms.ColorJitter(
+                brightness=(0.2, 1.7),
+                contrast=(0.2, 1.7),
+                saturation=(0.2, 1.7)
+            )(image)
 
         # to tensor
         if self.transform is not None:
@@ -77,13 +88,13 @@ class SkiTBDataset(Dataset):
             ]
             
         # random horizontal filp the image
-        if not self.test and random.random() < 0.5:
+        if use_augmentation and random.random() < 0.5:
             image = transforms.functional.hflip(image)
             line[0] = 1 - line[0]
             line[2] = 1 - line[2]
         
         # random blur the image
-        if not self.test and random.random() < 0.5:
+        if use_augmentation and random.random() < 0.5:
             random_kernel_size = random.choice([7, 11, 17])
             image = transforms.functional.gaussian_blur(image, kernel_size=random_kernel_size)
         
@@ -92,7 +103,7 @@ class SkiTBDataset(Dataset):
         return image, line, path_img.split('/')[-1]
 
     def __len__(self):
-        return len(self.image_path)
+        return len(self.image_path) if self.test else len(self.image_path) * 4
 
     # def collate_fn(self, batch):
     #     images, lines, names, flipped = list(zip(*batch))

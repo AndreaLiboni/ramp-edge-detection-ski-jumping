@@ -11,10 +11,10 @@ DATA:
 OPTIMIZER:
     MOMENTUM: 0.9
     GAMMA: 0.1
-    WEIGHT_DECAY: 1e-2
+    WEIGHT_DECAY: 0.001
     STEPS: []
-    LR_START: 5e-4  #5e-3
-    LR_END: 5e-5    #1e-3
+    LR_START: 5e-3  #5e-3
+    LR_END: 5e-4    #1e-3
 
 MODEL:
     NUMANGLE: 100
@@ -26,13 +26,14 @@ MODEL:
     # only support : resnet18, resnet50, resnet101, mobilenetv2, resnext50, res2net50, vgg16
 
 TRAIN:
-    EPOCHS: 60
+    EPOCHS: 120
     PRINT_FREQ: 20
-    TEST: False
+    TEST: True
     SEED: 
     DATA_PARALLEL: True
     RESUME: 
-    COMPUTE_ACC: False
+    COMPUTE_ACC: True
+    SHOW_DATASET: False
 
 MISC:
     TMP: "./model_output"

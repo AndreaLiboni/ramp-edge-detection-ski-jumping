@@ -112,23 +112,23 @@ def main():
             logger.info("=> no checkpoint found at '{}'".format(args.resume))
             return
     
-    # if args.model:
-    #     if isfile(args.model):
-    #         logger.info("=> loading model '{}'".format(args.model))
-    #         try:
-    #             model.load_state_dict(torch.load(args.model, weights_only=True))
-    #         except:
-    #             model.load_state_dict(torch.load(args.model)['state_dict'])
-    #         logger.info("=> loaded model '{}'".format(args.model))
-    #     else:
-    #         logger.info("=> no model found at '{}'".format(args.model))
+    if args.model:
+        if isfile(args.model):
+            logger.info("=> loading model '{}'".format(args.model))
+            try:
+                model.load_state_dict(torch.load(args.model, weights_only=True))
+            except:
+                model.load_state_dict(torch.load(args.model)['state_dict'])
+            logger.info("=> loaded model '{}'".format(args.model))
+        else:
+            logger.info("=> no model found at '{}'".format(args.model))
 
     # dataloader
     train_loader = get_loader(
         root_dir=CONFIGS["DATA"]["DIR"], 
         test=False,
         batch_size=CONFIGS["DATA"]["BATCH_SIZE"],
-        shuffle=True,
+        shuffle=not CONFIGS["TRAIN"]["SHOW_DATASET"],
         num_workers=CONFIGS["DATA"]["WORKERS"]
     )
     test_loader = get_loader(
@@ -152,15 +152,31 @@ def main():
     #     raise(NotImplementedError)
     
     if CONFIGS["TRAIN"]["TEST"]:
-        validate(test_loader, model, 0, writer, args)
+        validate(test_loader, model, 0, writer, show_result=True)
+        return
+    
+    if CONFIGS["TRAIN"]["SHOW_DATASET"]:
+        visualize_save_path = os.path.join(CONFIGS["MISC"]["TMP"], 'visualize', 'dataset')
+        os.makedirs(visualize_save_path, exist_ok=True)
+        untransform = train_loader.dataset.untransform
+        for data in train_loader:
+            images, lines, names = data
+            for model_input, line, name in zip(images, lines, names):
+                img = untransform(model_input.cpu().detach()) * 255
+                img = np.transpose(img.numpy(), (1, 2, 0))
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                line_norm = line.cpu().detach().numpy() * 400
+                img = cv2.line(img, (int(line_norm[0]), int(line_norm[1])), (int(line_norm[2]), int(line_norm[3])), (255, 0, 255), thickness=2)
+                cv2.imwrite(os.path.join(visualize_save_path, name), img)
         return
 
     logger.info("Start training.")
 
     for epoch in range(start_epoch, CONFIGS["TRAIN"]["EPOCHS"]):
         
-        train_loss, train_acc = train(train_loader, model, optimizer, epoch, writer, args)
-        test_loss, test_acc = validate(test_loader, model, epoch, writer, args)
+        train_loss, train_acc = train(train_loader, model, optimizer, epoch, writer)
+        test_loss, test_acc = validate(test_loader, model, epoch, writer)
 
         train_epochs_loss.append(train_loss)
         train_epochs_acc.append(train_acc)
@@ -203,7 +219,7 @@ def main():
                     "Remaining {remaining.days:d} days {remaining.hours:d} hours {remaining.minutes:d} minutes.".format(
                     epoch, CONFIGS["TRAIN"]["EPOCHS"], CONFIGS["MISC"]["TMP"], elapsed=elapsed, remaining=remaining))
 
-        df = pd.DataFrame(train_epochs_loss).plot()
+        df = pd.DataFrame([loss if loss < 0.002 else 0.002 for loss in train_epochs_loss]).plot()
         plt.xlabel('Epoch ' + str(epoch))
         plt.ylabel('Loss (max 0.001)')
         plt.savefig('model_output/loss.png')
@@ -214,11 +230,18 @@ def main():
         plt.ylabel('Accuracy (%)')
         plt.savefig('model_output/accuracy.png')
         plt.close()
+
+        if CONFIGS["TRAIN"]["COMPUTE_ACC"]:
+            df = pd.DataFrame(train_epochs_acc).plot()
+            plt.xlabel('Epoch ' + str(epoch))
+            plt.ylabel('Accuracy (%)')
+            plt.savefig('model_output/accuracy_train.png')
+            plt.close()
         
 
     logger.info("Optimization done, ALL results saved to %s." % CONFIGS["MISC"]["TMP"])
 
-def train(train_loader, model, optimizer, epoch, writer, args):
+def train(train_loader, model, optimizer, epoch, writer):
     # switch to train mode
     model.train()
     # torch.cuda.empty_cache()
@@ -227,13 +250,13 @@ def train(train_loader, model, optimizer, epoch, writer, args):
 
     total_loss = 0
 
-    total_tp = np.zeros(99)
-    total_fp = np.zeros(99)
-    total_fn = np.zeros(99)
+    total_tp = np.zeros(1)
+    total_fp = np.zeros(1)
+    total_fn = np.zeros(1)
 
-    total_tp_align = np.zeros(99)
-    total_fp_align = np.zeros(99)
-    total_fn_align = np.zeros(99)
+    total_tp_align = np.zeros(1)
+    total_fp_align = np.zeros(1)
+    total_fn_align = np.zeros(1)
 
     criterion = nn.MSELoss()
     untransform = train_loader.dataset.untransform
@@ -262,7 +285,7 @@ def train(train_loader, model, optimizer, epoch, writer, args):
             b_points = [[point * 400 for point in predicted_line] for predicted_line in predicted_lines.detach().cpu()]
             gt_coords = [[point * 400 for point in line] for line in lines.detach().cpu()]
 
-            for j in range(1, 100):
+            for j in range(1, 1):
                 tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=j*0.01)
                 total_tp[j-1] += tp
                 total_fp[j-1] += fp
@@ -298,11 +321,10 @@ def train(train_loader, model, optimizer, epoch, writer, args):
     
     logger.info('Train result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
     logger.info('Train result: ==== F-measure: %.5f' % acc.mean())
-    logger.info('Train result: ==== F-measure@0.95: %.5f' % f[95 - 1])
     return total_loss, acc.mean()
  
     
-def validate(test_loader, model, epoch, writer, args):
+def validate(test_loader, model, epoch, writer, show_result=False):
     # switch to evaluate mode
     model.eval()
     total_loss = 0
@@ -348,7 +370,7 @@ def validate(test_loader, model, epoch, writer, args):
                 total_fp[j-1] += fp
                 total_fn[j-1] += fn
 
-            if i == 0:
+            if i == 0 or show_result:
                 img = untransform(images[0].cpu().detach()) * 255
                 img = np.transpose(img.numpy(), (1, 2, 0))
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -360,8 +382,10 @@ def validate(test_loader, model, epoch, writer, args):
                 
                 visualize_save_path = os.path.join(CONFIGS["MISC"]["TMP"], 'visualize', 'test')
                 os.makedirs(visualize_save_path, exist_ok=True)
-                cv2.imwrite(os.path.join(visualize_save_path, str(epoch) + '.jpg'), img)
-                # cv2.imwrite(os.path.join(visualize_save_path, names[0]), img)
+                if not show_result:
+                    cv2.imwrite(os.path.join(visualize_save_path, str(epoch) + '.jpg'), img)
+                else:
+                    cv2.imwrite(os.path.join(visualize_save_path, names[0]), img)
             
         total_loss /= iter_num
         
