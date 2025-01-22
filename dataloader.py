@@ -9,10 +9,20 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import cv2
 
+transform = transforms.Compose([
+    transforms.Resize((400, 400)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+untransform = transforms.Compose([
+    transforms.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+    transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ]),
+])
+
 
 class SkiTBDataset(Dataset):
 
-    def __init__(self, root_dir, test, transform=None, untransform=None, output_size=(400, 400)):
+    def __init__(self, root_dir, test, transform=None, untransform=None, output_size=(400, 400), use_augmentation=True):
         index_file = root_dir + ('test_idx.txt' if test else 'train_idx.txt')
         file_lines = [line.rstrip('\n') for line in open(index_file)]
         self.image_path = [join(root_dir, 'images', i + ".jpg") for i in file_lines]
@@ -21,11 +31,16 @@ class SkiTBDataset(Dataset):
         self.output_size = output_size # (w, h)
         self.transform = transform
         self.untransform = untransform
+        self.use_augmentation = use_augmentation
     
     def __getitem__(self, item):
 
-        index = item if self.test else item // 4
-        use_augmentation = not self.test and item % 4 != 0
+        if self.use_augmentation and not self.test:
+            index = item // 4
+            use_augmentation = item % 4 != 0
+        else:
+            index = item
+            use_augmentation = False
 
         path_img = self.image_path[index]
         path_label = self.data_path[index]
@@ -103,7 +118,7 @@ class SkiTBDataset(Dataset):
         return image, line, path_img.split('/')[-1]
 
     def __len__(self):
-        return len(self.image_path) if self.test else len(self.image_path) * 4
+        return len(self.image_path) * 4 if not self.test and self.use_augmentation else len(self.image_path)
 
     # def collate_fn(self, batch):
     #     images, lines, names, flipped = list(zip(*batch))
@@ -112,17 +127,8 @@ class SkiTBDataset(Dataset):
 
     #     return images, lines, names, flipped
 
-def get_loader(root_dir, test, batch_size, shuffle, num_workers):
-    transform = transforms.Compose([
-        transforms.Resize((400, 400)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    untransform = transforms.Compose([
-        transforms.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
-        transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ]),
-    ])
-    dataset = SkiTBDataset(root_dir, test, transform=transform, untransform=untransform)
+def get_loader(root_dir, test, batch_size, shuffle, num_workers, use_augmentation=True):
+    dataset = SkiTBDataset(root_dir, test, transform=transform, untransform=untransform, use_augmentation=use_augmentation)
     return DataLoader(
         dataset=dataset,
         batch_size=batch_size,

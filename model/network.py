@@ -10,8 +10,9 @@ from model.backbone.res2net import res2net50_FPN
 from model.dht import DHT_Layer
 
 class Net(nn.Module):
-    def __init__(self, numAngle, numRho, backbone):
+    def __init__(self, int_dim, backbone):
         super(Net, self).__init__()
+        numAngle = numRho = int_dim
         if backbone == 'resnet18':
             self.backbone = FPN18(pretrained=True, output_stride=32)
             output_stride = 32
