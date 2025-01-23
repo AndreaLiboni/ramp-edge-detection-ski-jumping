@@ -10,10 +10,16 @@ import torch
 from yaml import safe_load
 import joblib
 from os.path import join
+import sys
 
 from model.network import Net
 from dataloader import SkiTBDataset, transform, untransform
-from grid_search import accuracy_score
+from utils import accuracy_score, get_memory, memory_limit
+
+def evaluate(y_test, y_pred):
+    return {
+        'accuracy': accuracy_score(y_test, y_pred),
+    }
 
 def main():
     login()
@@ -58,6 +64,7 @@ def main():
     x_train = []
     y_train = []
     for i, (image, target, _) in enumerate(train_dataset):
+
         x_train.append(image.numpy())
         y_train.append(target.numpy())
 
@@ -75,8 +82,10 @@ def main():
     y_test = np.array(y_test)
     print("data loaded!")
 
+    exp = start(project_name='ramp-edge-detection-ski-jumping')
+
     # training
-    kfold = KFold(n_splits=5, shuffle=True)
+    kfold = KFold(n_splits=2, shuffle=True)
     results = cross_val_score(
         estimator=model,
         X=x_train,
@@ -91,7 +100,6 @@ def main():
     joblib.dump(clf, join(CONFIGS["MISC"]["TMP"], "model.pkl"))
 
     # logging to comet
-    exp = start(project_name='ramp-edge-detection-ski-jumping')
 
     # train
     y_train_pred = model.predict(x_train)
@@ -115,4 +123,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except MemoryError:
+        sys.stderr.write('\n\nERROR: Memory Exception\n')
+        sys.exit(1)

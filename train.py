@@ -20,7 +20,7 @@ from dataloader import get_loader
 from model.network import Net
 from skimage.measure import label, regionprops
 from tensorboardX import SummaryWriter
-from utils import reverse_mapping, edge_align
+from utils import reverse_mapping, edge_align, accuracy_score
 from hungarian_matching import caculate_tp_fp_fn
 
 import pandas as pd
@@ -248,14 +248,7 @@ def train(train_loader, model, optimizer, epoch, writer):
     iter_num = len(train_loader.dataset) // CONFIGS["DATA"]["BATCH_SIZE"]
 
     total_loss = 0
-
-    total_tp = np.zeros(1)
-    total_fp = np.zeros(1)
-    total_fn = np.zeros(1)
-
-    total_tp_align = np.zeros(1)
-    total_fp_align = np.zeros(1)
-    total_fn_align = np.zeros(1)
+    acc = 0
 
     criterion = nn.MSELoss()
     untransform = train_loader.dataset.untransform
@@ -281,14 +274,7 @@ def train(train_loader, model, optimizer, epoch, writer):
 
         # compute accuracy
         if CONFIGS["TRAIN"]["COMPUTE_ACC"]:
-            b_points = [[point * 400 for point in predicted_line] for predicted_line in predicted_lines.detach().cpu()]
-            gt_coords = [[point * 400 for point in line] for line in lines.detach().cpu()]
-
-            for j in range(1, 1):
-                tp, fp, fn = caculate_tp_fp_fn(b_points, gt_coords, thresh=j*0.01)
-                total_tp[j-1] += tp
-                total_fp[j-1] += fp
-                total_fn[j-1] += fn
+            acc += accuracy_score(lines.cpu().detach().numpy(), predicted_lines.cpu().detach().numpy())
         
         # compute gradient and do SGD step
         loss.backward()
@@ -312,15 +298,10 @@ def train(train_loader, model, optimizer, epoch, writer):
                 break
     
     total_loss /= iter_num
-
-    total_recall = total_tp / (total_tp + total_fn + 1e-8)
-    total_precision = total_tp / (total_tp + total_fp + 1e-8)
-    f = 2 * total_recall * total_precision / (total_recall + total_precision + 1e-8)
-    acc = f.mean()
+    acc /= len(train_loader.dataset)
     
-    logger.info('Train result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
-    logger.info('Train result: ==== F-measure: %.5f' % acc.mean())
-    return total_loss, acc.mean()
+    logger.info('Train result: ==== Accuracy: %.5f' % (acc))
+    return total_loss, acc
  
     
 def validate(test_loader, model, epoch, writer, show_result=False):
@@ -337,6 +318,7 @@ def validate(test_loader, model, epoch, writer, show_result=False):
     total_fn_align = np.zeros(99)
 
     untransform = test_loader.dataset.untransform
+    acc = 0
     with torch.no_grad():
         bar = tqdm.tqdm(test_loader)
         iter_num = len(test_loader.dataset) // 1
@@ -369,6 +351,8 @@ def validate(test_loader, model, epoch, writer, show_result=False):
                 total_fp[j-1] += fp
                 total_fn[j-1] += fn
 
+            acc += accuracy_score(lines.cpu().detach().numpy(), predicted_lines.cpu().detach().numpy())
+
             if i == 0 or show_result:
                 img = untransform(images[0].cpu().detach()) * 255
                 img = np.transpose(img.numpy(), (1, 2, 0))
@@ -392,8 +376,10 @@ def validate(test_loader, model, epoch, writer, show_result=False):
         total_precision = total_tp / (total_tp + total_fp + 1e-8)
         f = 2 * total_recall * total_precision / (total_recall + total_precision + 1e-8)
         
+        acc /= len(test_loader.dataset)
        
         logger.info('Validation result: ==== Precision: %.5f, Recall: %.5f' % (total_precision.mean(), total_recall.mean()))
+        logger.info('Validation result: ==== Accuracy: %.5f' % (acc))
         acc = f.mean()
         logger.info('Validation result: ==== F-measure: %.5f' % acc.mean())
         logger.info('Validation result: ==== F-measure@0.95: %.5f' % f[95 - 1])

@@ -18,9 +18,9 @@ OPTIMIZER:
 
 MODEL:
     DH_DIMENTION: 100
-    NUM_CONV_LAYER: 2
+    NUM_CONV_LAYER: 1
     NUM_POOL_LAYER: 1
-    NUM_FC_LAYER:  # This will enable the FC layer and disable the Pooling layer
+    NUM_FC_LAYER:  6 # This will enable the FC layer and disable the Pooling layer
     FIX: True
     THRESHOLD: 0.01
     EDGE_ALIGN: False
@@ -28,7 +28,7 @@ MODEL:
     # only support : resnet18, resnet50, resnet101, mobilenetv2, resnext50, res2net50, vgg16
 
 TRAIN:
-    EPOCHS: 120
+    EPOCHS: 10
     PRINT_FREQ: 20
     TEST: True
     SEED: 

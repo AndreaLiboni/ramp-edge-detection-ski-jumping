@@ -6,6 +6,9 @@ import os
 import torchvision
 from PIL import Image
 from basic_ops import *
+from metric import EA_metric
+import resource
+import sys
 
 def draw_line(y, x, angle, image, color=(0,0,255), num_directions=24):
     '''
@@ -187,3 +190,28 @@ def edge_align(coords, filename, size, division=9):
                 ry1, rx1, ry2, rx2 = ny1, nx1, ny2, nx2
 
     return [ry1, rx1, ry2, rx2]
+
+def accuracy_score(y_true, y_pred):
+    acc = 0
+    for true_line, pred_line in zip(y_true, y_pred):
+        acc += EA_metric(
+            Line([point * 400 for point in pred_line]),
+            Line([point * 400 for point in true_line])
+        )
+    return acc / len(y_true)
+
+def memory_limit(perc=0.5):
+    """Limit max memory usage to half."""
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    # Convert KiB to bytes, and divide in two to half
+    resource.setrlimit(resource.RLIMIT_AS, (int(get_memory() * (1024 * perc)), hard))
+
+def get_memory():
+    with open('/proc/meminfo', 'r') as mem:
+        free_memory = 0
+        for i in mem:
+            sline = i.split()
+            if str(sline[0]) in ('MemFree:', 'Buffers:', 'Cached:'):
+                free_memory += int(sline[1])
+    return free_memory  # KiB
+
