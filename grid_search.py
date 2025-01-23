@@ -1,3 +1,4 @@
+from comet_ml import start, login
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
@@ -38,6 +39,8 @@ def accuracy_score(y_true, y_pred):
     return acc
 
 def main():
+    login()
+
     CONFIGS = safe_load(open('config.yml'))
 
     estimator = NeuralNet(
@@ -67,8 +70,6 @@ def main():
     for i, (image, target, _) in enumerate(train_dataset):
         x_train.append(image.numpy())
         y_train.append(target.numpy())
-        # if i > 100:
-        #     break
 
     x_train = np.array(x_train)
     y_train = np.array(y_train)
@@ -94,9 +95,16 @@ def main():
     )
     grid_result = grid.fit(x_train, y_train)
 
-    print(grid_result.best_score_)
-    print(grid_result.best_params_)
-    print(grid_result)
+    # log experiment on comet
+    for i in range(len(grid_result.cv_results_['params'])):
+        exp = start(project_name='ramp-edge-detection-ski-jumping')
+
+        for k,v in grid_result.cv_results_.items():
+            if k == "params":
+                exp.log_parameters(v[i])
+            else:
+                exp.log_metric(k,v[i])
+
 
 if __name__ == "__main__":
     main()

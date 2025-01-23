@@ -1,3 +1,5 @@
+from comet_ml import start, login
+from comet_ml.integration.sklearn import log_model
 import numpy as np
 from skorch import NeuralNet
 from sklearn.model_selection import cross_val_score, KFold
@@ -14,6 +16,7 @@ from dataloader import SkiTBDataset, transform, untransform
 from grid_search import accuracy_score
 
 def main():
+    login()
     CONFIGS = safe_load(open('config.yml'))
     CONFIGS["OPTIMIZER"]["LR_START"] = float(CONFIGS["OPTIMIZER"]["LR_START"])
 
@@ -43,8 +46,15 @@ def main():
         untransform=untransform,
         use_augmentation=True,
     )
+    test_dataset = SkiTBDataset(
+        root_dir=CONFIGS["DATA"]["DIR"],
+        test=True,
+        transform=transform,
+        untransform=untransform,
+    )
 
     print("loading data...")
+    print("train")
     x_train = []
     y_train = []
     for i, (image, target, _) in enumerate(train_dataset):
@@ -53,6 +63,16 @@ def main():
 
     x_train = np.array(x_train)
     y_train = np.array(y_train)
+    
+    print("test")
+    x_test = []
+    y_test = []
+    for i, (image, target, _) in enumerate(test_dataset):
+        x_test.append(image.numpy())
+        y_test.append(target.numpy())
+
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
     print("data loaded!")
 
     # training
@@ -63,12 +83,36 @@ def main():
         y=y_train,
         cv=kfold,
         scoring=make_scorer(accuracy_score),
+        n_jobs=1
     )
     print("mean = %.3f; std = %.3f" % (results.mean(), results.std()))
 
-
     # saving
     joblib.dump(clf, join(CONFIGS["MISC"]["TMP"], "model.pkl"))
+
+    # logging to comet
+    exp = start(project_name='ramp-edge-detection-ski-jumping')
+
+    # train
+    y_train_pred = model.predict(x_train)
+    with exp.train():
+        metrics = evaluate(y_train, y_train_pred)
+        exp.log_metrics(metrics)
+    
+    # test
+    y_test_pred = model.predict(x_test)
+    with exp.test():
+        metrics = evaluate(y_test, y_test_pred)
+        exp.log_metrics(metrics)
+
+    # save model on comet
+    log_model(
+        exp,
+        "my-model",
+        model,
+        persistence_module=joblib,
+    )
+
 
 if __name__ == "__main__":
     main()

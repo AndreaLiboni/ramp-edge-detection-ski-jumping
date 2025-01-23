@@ -1,4 +1,5 @@
 venv
+.env
 
 data
 model_output
