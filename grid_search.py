@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.model_selection import GridSearchCV
-from sklearn.base import BaseEstimator
 from sklearn.metrics import make_scorer
 from skorch import NeuralNet
 from torch import nn
@@ -11,8 +10,6 @@ from yaml import safe_load
 from hungarian_matching import caculate_tp_fp_fn
 from model.network import Net
 from dataloader import SkiTBDataset, transform, untransform
-
-CONFIGS = safe_load(open('config.yml'))
 
 def accuracy_score(y_true, y_pred):
     print("start accuracy_score")
@@ -40,60 +37,66 @@ def accuracy_score(y_true, y_pred):
     print("end accuracy_score")
     return acc
 
-estimator = NeuralNet(
-    module=Net,
-    device='cuda',
+def main():
+    CONFIGS = safe_load(open('config.yml'))
 
-    module__backbone='resnet50',
+    estimator = NeuralNet(
+        module=Net,
+        device='cuda',
 
-    optimizer=optim.AdamW,
-    criterion=nn.MSELoss,
-    max_epochs=5,
-    batch_size=8,
-)
+        module__backbone='resnet50',
 
-# data
-train_dataset = SkiTBDataset(
-    root_dir=CONFIGS["DATA"]["DIR"],
-    test=False,
-    transform=transform,
-    untransform=untransform,
-    use_augmentation=False,
-)
+        optimizer=optim.AdamW,
+        criterion=nn.MSELoss,
+        max_epochs=5,
+        batch_size=8,
+    )
 
-print("loading data...")
-x_train = []
-y_train = []
-for i, (image, target, _) in enumerate(train_dataset):
-    x_train.append(image.numpy())
-    y_train.append(target.numpy())
-    # if i > 100:
-    #     break
+    # data
+    train_dataset = SkiTBDataset(
+        root_dir=CONFIGS["DATA"]["DIR"],
+        test=False,
+        transform=transform,
+        untransform=untransform,
+        use_augmentation=False,
+    )
 
-x_train = np.array(x_train)
-y_train = np.array(y_train)
-print("data loaded!")
+    print("loading data...")
+    x_train = []
+    y_train = []
+    for i, (image, target, _) in enumerate(train_dataset):
+        x_train.append(image.numpy())
+        y_train.append(target.numpy())
+        # if i > 100:
+        #     break
 
-# grid search
-param_grid = {
-    'module__dh_dimention': [(50,50), (100,100), (200,200)],
-    'module__num_conv_layer': [1, 2, 6],
-    'module__num_pool_layer': [1, 2, 4],
-    'module__num_fc_layer': [2, 4, 6],
-    'lr': [5e-3, 5e-5, 5e-7],
-}
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    print("data loaded!")
 
-grid = GridSearchCV(
-    estimator=estimator,
-    param_grid=param_grid,
-    n_jobs=1,
-    verbose=3,
-    cv=3,
-    scoring=make_scorer(accuracy_score),
-    error_score='raise'
-)
-grid_result = grid.fit(x_train, y_train)
+    # grid search
+    param_grid = {
+        'module__dh_dimention': [(50,50), (100,100), (200,200)],
+        'module__num_conv_layer': [1, 2, 6],
+        'module__num_pool_layer': [1, 2, 4],
+        'module__num_fc_layer': [2, 4, 6],
+        'lr': [5e-3, 5e-5, 5e-7],
+    }
 
-print(grid_result.best_score_)
-print(grid_result.best_params_)
-print(grid_result)
+    grid = GridSearchCV(
+        estimator=estimator,
+        param_grid=param_grid,
+        n_jobs=1,
+        verbose=3,
+        cv=3,
+        scoring=make_scorer(accuracy_score),
+        error_score='raise'
+    )
+    grid_result = grid.fit(x_train, y_train)
+
+    print(grid_result.best_score_)
+    print(grid_result.best_params_)
+    print(grid_result)
+
+if __name__ == "__main__":
+    main()
