@@ -63,9 +63,11 @@ def main():
         cudnn.deterministic = True
 
     model = Net(
-        numAngle=CONFIGS["MODEL"]["NUMANGLE"],
-        numRho=CONFIGS["MODEL"]["NUMRHO"],
-        backbone=CONFIGS["MODEL"]["BACKBONE"]
+        dh_dimention=CONFIGS["MODEL"]["DH_DIMENTION"],
+        backbone=CONFIGS["MODEL"]["BACKBONE"],
+        num_conv_layer=CONFIGS["MODEL"]["NUM_CONV_LAYER"],
+        num_pool_layer=CONFIGS["MODEL"]["NUM_POOL_LAYER"],
+        num_fc_layer=CONFIGS["MODEL"]["NUM_FC_LAYER"],
     )
     
     if CONFIGS["TRAIN"]["DATA_PARALLEL"]:
@@ -147,9 +149,6 @@ def main():
 
     is_best = False
     start_time = time.time()
-
-    # if CONFIGS["TRAIN"]["RESUME"] is not None:
-    #     raise(NotImplementedError)
     
     if CONFIGS["TRAIN"]["TEST"]:
         validate(test_loader, model, 0, writer, show_result=True)

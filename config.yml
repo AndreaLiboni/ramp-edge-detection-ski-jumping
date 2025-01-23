@@ -17,8 +17,10 @@ OPTIMIZER:
     LR_END: 5e-4    #1e-3
 
 MODEL:
-    NUMANGLE: 100
-    NUMRHO: 100
+    DH_DIMENTION: 100
+    NUM_CONV_LAYER: 2
+    NUM_POOL_LAYER: 1
+    NUM_FC_LAYER:  # This will enable the FC layer and disable the Pooling layer
     FIX: True
     THRESHOLD: 0.01
     EDGE_ALIGN: False

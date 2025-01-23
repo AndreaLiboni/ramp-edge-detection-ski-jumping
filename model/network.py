@@ -10,9 +10,9 @@ from model.backbone.res2net import res2net50_FPN
 from model.dht import DHT_Layer
 
 class Net(nn.Module):
-    def __init__(self, int_dim, backbone):
+    def __init__(self, backbone, dh_dimention, num_conv_layer, num_pool_layer, num_fc_layer=None):
         super(Net, self).__init__()
-        numAngle = numRho = int_dim
+        numAngle, numRho = dh_dimention if type(dh_dimention) != int else (dh_dimention, dh_dimention)
         if backbone == 'resnet18':
             self.backbone = FPN18(pretrained=True, output_stride=32)
             output_stride = 32
@@ -49,31 +49,64 @@ class Net(nn.Module):
             self.dht_detector2 = DHT_Layer(256, 128, numAngle=numAngle, numRho=numRho // 2)
             self.dht_detector3 = DHT_Layer(256, 128, numAngle=numAngle, numRho=numRho // 4)
             self.dht_detector4 = DHT_Layer(256, 128, numAngle=numAngle, numRho=numRho // (output_stride // 4))
-            
-            # self.last_conv = nn.Sequential(
-            #     nn.Conv2d(512, 1, 1)
-            # )
 
         self.numAngle = numAngle
         self.numRho = numRho
 
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(512, 64, kernel_size=3, padding=1),
-            nn.LeakyReLU(inplace=True),
-            nn.Conv2d(64, 4, kernel_size=3, padding=1),
-            nn.LeakyReLU(inplace=True),
-            nn.AdaptiveAvgPool2d(1),  # Reduce to a smaller fixed size
-            # [btach_size, 4, 1, 1]
-            nn.LeakyReLU(inplace=True),
-        )
+        #conv_layers
+        layers = []
+        in_channels = 512
+        out_channels = in_channels // 2 if num_conv_layer > 1 else 4
+        for i in range(num_conv_layer):
+            layers.append(nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels if i < num_conv_layer - 1 else 4,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            ))
+            layers.append(nn.LeakyReLU(inplace=True))
+            in_channels = out_channels
+            out_channels = max(out_channels // 2, 4)
+        
+        self.conv_layers = nn.Sequential(*layers)
 
-        # self.fc_layers = nn.Sequential(
-        #     nn.Linear(64 * 10 * 10, 64),
-        #     nn.LeakyReLU(inplace=True),
-        #     nn.Dropout(p=0.5),
-        #     nn.Linear(64, 4),
-        #     nn.LeakyReLU(inplace=True),
-        # )
+        self.pooling_layers = None
+        self.fc_layers = None
+        if num_fc_layer is None:
+            # pooling_layers
+            layers = []
+            start_dim = self.numAngle
+            for i in range(num_pool_layer):
+                start_dim = start_dim // 2
+                layers.append(nn.AdaptiveAvgPool2d(
+                    output_size=start_dim if i < num_pool_layer - 1 else 1
+                ))
+                layers.append(nn.LeakyReLU(inplace=True))
+            
+            self.pooling_layers = nn.Sequential(*layers)
+        else:
+            # fc_layers
+            layers = [
+                nn.AdaptiveAvgPool2d(25),
+                nn.Flatten()
+            ]
+            in_channels = 25 * 25 * 4
+            out_channels = 512 if num_fc_layer > 1 else 4
+            for i in range(num_fc_layer):
+                out_channels = out_channels if i < num_fc_layer - 1 else 4
+                layers.append(nn.Linear(
+                    in_features=in_channels,
+                    out_features=out_channels
+                ))
+                layers.append(nn.LeakyReLU(inplace=True))
+                if out_channels != 4:
+                    layers.append(nn.Dropout(p=0.5))
+                in_channels = out_channels
+                out_channels = max(out_channels // 2, 4)
+            
+            self.fc_layers = nn.Sequential(*layers)
+
 
     def upsample_cat(self, p1, p2, p3, p4):
         p1 = nn.functional.interpolate(p1, size=(self.numAngle, self.numRho), mode='bilinear')
@@ -98,5 +131,9 @@ class Net(nn.Module):
 
         out = self.upsample_cat(p1, p2, p3, p4)
         out = self.conv_layers(out)
-        # out = self.fc_layers(out)
-        return out.view(out.size(0), -1) # [batch_size, 4] x1, y1, x2, y2
+        if self.pooling_layers is not None:
+            out = self.pooling_layers(out)
+            out = out.view(out.size(0), -1)
+        else:
+            out = self.fc_layers(out)
+        return out # [batch_size, 4] x1, y1, x2, y2

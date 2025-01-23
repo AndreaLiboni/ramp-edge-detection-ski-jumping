@@ -76,7 +76,11 @@ print("data loaded!")
 
 # grid search
 param_grid = {
-    'module__int_dim': [50, 100, 200],
+    'module__dh_dimention': [(50,50), (100,100), (200,200)],
+    'module__num_conv_layer': [1, 2, 6],
+    'module__num_pool_layer': [1, 2, 4],
+    'module__num_fc_layer': [2, 4, 6],
+    'lr': [5e-3, 5e-5, 5e-7],
 }
 
 grid = GridSearchCV(
@@ -84,6 +88,7 @@ grid = GridSearchCV(
     param_grid=param_grid,
     n_jobs=1,
     verbose=3,
+    cv=3,
     scoring=make_scorer(accuracy_score),
     error_score='raise'
 )
