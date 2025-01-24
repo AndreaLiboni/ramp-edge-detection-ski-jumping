@@ -54,7 +54,8 @@ logger = Logger(os.path.join(CONFIGS["MISC"]["TMP"], "log.txt"))
 logger.info(CONFIGS)
 
 def main():
-    login()
+    if CONFIGS["TRAIN"]["LOG_COMET"]:
+        login()
     logger.info(args)
     assert os.path.isdir(CONFIGS["DATA"]["DIR"])
 
@@ -173,17 +174,19 @@ def main():
         return
 
     logger.info("Start training.")
-    exp = start(project_name='ramp-edge-detection-ski-jumping')
+    if CONFIGS["TRAIN"]["LOG_COMET"]:
+        exp = start(project_name='ramp-edge-detection-ski-jumping')
 
     for epoch in range(start_epoch, CONFIGS["TRAIN"]["EPOCHS"]):
         
         train_loss, train_acc = train(train_loader, model, optimizer, epoch, writer)
         test_loss, test_acc = validate(test_loader, model, epoch, writer)
 
-        with exp.train():
-            exp.log_metrics({'loss': train_loss, 'accuracy': train_acc})
-        with exp.test():
-            exp.log_metrics({'loss': test_loss, 'accuracy': test_acc})
+        if CONFIGS["TRAIN"]["LOG_COMET"]:
+            with exp.train():
+                exp.log_metrics({'loss': train_loss, 'accuracy': train_acc})
+            with exp.test():
+                exp.log_metrics({'loss': test_loss, 'accuracy': test_acc})
 
         train_epochs_loss.append(train_loss)
         train_epochs_acc.append(train_acc)
@@ -238,12 +241,11 @@ def main():
         plt.savefig('model_output/accuracy.png')
         plt.close()
 
-        if CONFIGS["TRAIN"]["COMPUTE_ACC"]:
-            df = pd.DataFrame(train_epochs_acc).plot()
-            plt.xlabel('Epoch ' + str(epoch))
-            plt.ylabel('Accuracy (%)')
-            plt.savefig('model_output/accuracy_train.png')
-            plt.close()
+        df = pd.DataFrame(train_epochs_acc).plot()
+        plt.xlabel('Epoch ' + str(epoch))
+        plt.ylabel('Accuracy (%)')
+        plt.savefig('model_output/accuracy_train.png')
+        plt.close()
         
 
     logger.info("Optimization done, ALL results saved to %s." % CONFIGS["MISC"]["TMP"])
@@ -281,8 +283,7 @@ def train(train_loader, model, optimizer, epoch, writer):
         bar.set_description('Training Loss:{}'.format(loss.item()))
 
         # compute accuracy
-        if CONFIGS["TRAIN"]["COMPUTE_ACC"]:
-            acc += accuracy_score(lines.cpu().detach().numpy(), predicted_lines.cpu().detach().numpy())
+        acc += accuracy_score(lines.cpu().detach().numpy(), predicted_lines.cpu().detach().numpy())
         
         # compute gradient and do SGD step
         loss.backward()
