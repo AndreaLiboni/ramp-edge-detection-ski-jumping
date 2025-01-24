@@ -1,3 +1,4 @@
+from comet_ml import start, login
 import argparse
 import os
 import random
@@ -53,7 +54,7 @@ logger = Logger(os.path.join(CONFIGS["MISC"]["TMP"], "log.txt"))
 logger.info(CONFIGS)
 
 def main():
-
+    login()
     logger.info(args)
     assert os.path.isdir(CONFIGS["DATA"]["DIR"])
 
@@ -131,7 +132,8 @@ def main():
         test=False,
         batch_size=CONFIGS["DATA"]["BATCH_SIZE"],
         shuffle=not CONFIGS["TRAIN"]["SHOW_DATASET"],
-        num_workers=CONFIGS["DATA"]["WORKERS"]
+        num_workers=CONFIGS["DATA"]["WORKERS"],
+        set_augmentation=4
     )
     test_loader = get_loader(
         root_dir=CONFIGS["DATA"]["DIR"], 
@@ -171,11 +173,17 @@ def main():
         return
 
     logger.info("Start training.")
+    exp = start(project_name='ramp-edge-detection-ski-jumping')
 
     for epoch in range(start_epoch, CONFIGS["TRAIN"]["EPOCHS"]):
         
         train_loss, train_acc = train(train_loader, model, optimizer, epoch, writer)
         test_loss, test_acc = validate(test_loader, model, epoch, writer)
+
+        with exp.train():
+            exp.log_metrics({'loss': train_loss, 'accuracy': train_acc})
+        with exp.test():
+            exp.log_metrics({'loss': test_loss, 'accuracy': test_acc})
 
         train_epochs_loss.append(train_loss)
         train_epochs_acc.append(train_acc)

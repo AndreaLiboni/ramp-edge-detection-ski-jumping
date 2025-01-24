@@ -22,7 +22,7 @@ untransform = transforms.Compose([
 
 class SkiTBDataset(Dataset):
 
-    def __init__(self, root_dir, test, transform=None, untransform=None, output_size=(400, 400), use_augmentation=True):
+    def __init__(self, root_dir, test, transform=None, untransform=None, output_size=(400, 400), set_augmentation=1):
         index_file = root_dir + ('test_idx.txt' if test else 'train_idx.txt')
         file_lines = [line.rstrip('\n') for line in open(index_file)]
         self.image_path = [join(root_dir, 'images', i + ".jpg") for i in file_lines]
@@ -31,13 +31,13 @@ class SkiTBDataset(Dataset):
         self.output_size = output_size # (w, h)
         self.transform = transform
         self.untransform = untransform
-        self.use_augmentation = use_augmentation
+        self.augmentation = set_augmentation if set_augmentation > 0 and not test else 1
     
     def __getitem__(self, item):
 
-        if self.use_augmentation and not self.test:
-            index = item // 4
-            use_augmentation = item % 4 != 0
+        if self.augmentation != 1:
+            index = item // self.augmentation
+            use_augmentation = item % self.augmentation != 0
         else:
             index = item
             use_augmentation = False
@@ -118,7 +118,7 @@ class SkiTBDataset(Dataset):
         return image, line, path_img.split('/')[-1]
 
     def __len__(self):
-        return len(self.image_path) * 4 if not self.test and self.use_augmentation else len(self.image_path)
+        return len(self.image_path) * self.augmentation
 
     # def collate_fn(self, batch):
     #     images, lines, names, flipped = list(zip(*batch))
@@ -127,8 +127,8 @@ class SkiTBDataset(Dataset):
 
     #     return images, lines, names, flipped
 
-def get_loader(root_dir, test, batch_size, shuffle, num_workers, use_augmentation=True):
-    dataset = SkiTBDataset(root_dir, test, transform=transform, untransform=untransform, use_augmentation=use_augmentation)
+def get_loader(root_dir, test, batch_size, shuffle, num_workers, set_augmentation=1):
+    dataset = SkiTBDataset(root_dir, test, transform=transform, untransform=untransform, set_augmentation=set_augmentation)
     return DataLoader(
         dataset=dataset,
         batch_size=batch_size,

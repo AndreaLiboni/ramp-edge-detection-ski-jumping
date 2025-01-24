@@ -38,7 +38,7 @@ def main():
 
         optimizer=optim.AdamW,
         criterion=nn.MSELoss,
-        max_epochs=CONFIGS["TRAIN"]["EPOCHS"],
+        max_epochs=4,
         batch_size=CONFIGS["DATA"]["BATCH_SIZE"],
         lr=CONFIGS["OPTIMIZER"]["LR_START"],
 
@@ -50,7 +50,7 @@ def main():
         test=False,
         transform=transform,
         untransform=untransform,
-        use_augmentation=True,
+        set_augmentation=3,
     )
     test_dataset = SkiTBDataset(
         root_dir=CONFIGS["DATA"]["DIR"],
@@ -64,7 +64,6 @@ def main():
     x_train = []
     y_train = []
     for i, (image, target, _) in enumerate(train_dataset):
-
         x_train.append(image.numpy())
         y_train.append(target.numpy())
 
@@ -85,7 +84,7 @@ def main():
     exp = start(project_name='ramp-edge-detection-ski-jumping')
 
     # training
-    kfold = KFold(n_splits=2, shuffle=True)
+    kfold = KFold(n_splits=5, shuffle=True)
     results = cross_val_score(
         estimator=model,
         X=x_train,
@@ -97,9 +96,11 @@ def main():
     print("mean = %.3f; std = %.3f" % (results.mean(), results.std()))
 
     # saving
-    joblib.dump(clf, join(CONFIGS["MISC"]["TMP"], "model.pkl"))
+    joblib.dump(model, join(CONFIGS["MISC"]["TMP"], "model.pkl"))
 
     # logging to comet
+    model = joblib.load(join(CONFIGS["MISC"]["TMP"], "model.pkl"))
+    model.fit(x_train, y_train)
 
     # train
     y_train_pred = model.predict(x_train)

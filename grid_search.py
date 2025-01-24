@@ -24,6 +24,9 @@ def main():
 
         module__backbone='resnet50',
         module__dh_dimention=(100, 100),
+        module__num_conv_layer=1,
+        module__num_pool_layer=1,
+        module__num_fc_layer=6,
 
         optimizer=optim.AdamW,
         criterion=nn.MSELoss,
@@ -55,10 +58,10 @@ def main():
     # grid search
     param_grid = {
         # 'module__dh_dimention': [(50,50), (100,100), (200,200)],
-        'module__num_conv_layer': [1, 2, 6],
-        'module__num_pool_layer': [1, 2, 4],
-        'module__num_fc_layer': [2, 4, 6],
-        # 'lr': [5e-3, 5e-5, 5e-7],
+        # 'module__num_conv_layer': [1, 2, 6],
+        # 'module__num_pool_layer': [1, 2, 4],
+        # 'module__num_fc_layer': [2, 4, 6],
+        'lr': [5e-3, 5e-5, 5e-7],
     }
 
     grid = GridSearchCV(
