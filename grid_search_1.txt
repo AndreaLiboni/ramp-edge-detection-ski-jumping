@@ -1,0 +1,494 @@
+loading data...
+data loaded!
+Fitting 3 folds for each of 27 candidates, totalling 81 fits
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       39.5769  2463917.1609  19.9341
+      2        0.6243       17.1187  19.3938
+      3        0.5259       86.3081  19.3336
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.008 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      274.9341       38.0595  19.9840
+      2        0.7028        9.2056  20.0977
+      3        0.8513      104.9325  19.4143
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      461.2239       67.2557  19.3000
+      2        0.9958        2.0815  19.3824
+      3        0.9408        4.0550  19.3941
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      313.0836        1.0986  19.2718
+      2        0.7095        0.6798  19.3158
+      3        0.6445        0.4884  19.3159
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.003 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       37.2871        0.7634  19.2959
+      2        0.5931        0.3757  19.3665
+      3        0.5171        0.3779  19.3696
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.016 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      336.8425      463.0616  19.3816
+      2        0.7345       28.3354  19.4233
+      3        0.6132        2.5054  19.4303
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.001 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      434.0202     1303.9436  19.3301
+      2        1.0559      177.6946  20.0864
+      3        1.0613       69.9364  19.7995
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      433.0854        1.5482  19.7521
+      2        0.6245        0.4559  19.6290
+      3        0.5682        0.4099  19.6314
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.021 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      483.7875      163.3333  19.8559
+      2        1.2202       52.8819  19.5148
+      3        1.0120   166294.2025  19.6001
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.8788       14.3384  20.1762
+      2        0.4529      549.0627  19.5786
+      3        0.4279        0.3461  20.2574
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.006 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.8758        0.5337  20.6374
+      2        1.2065      472.7656  20.1133
+      3        0.8840      270.2366  19.6734
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        2.9977    41071.2270  20.0434
+      2        1.3787        4.9794  19.7607
+      3        0.6136        0.4449  20.2830
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.005 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.0951       15.0380  19.4800
+      2        0.5335        0.4124  20.2957
+      3        0.3751        0.2919  19.9532
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.010 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        7.2645   337400.6699  20.5124
+      2        1.1477        0.4211  19.6300
+      3        0.7326       34.4588  19.6207
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        8.6241        1.5865  19.9412
+      2        0.2304        0.1119  19.8016
+      3        0.1361        0.0491  19.8200
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.289 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.2598      572.2439  19.5781
+      2        0.1436     5803.9297  19.6387
+      3        0.0864        0.0520  19.7896
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.503 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        4.3193      532.3318  19.9551
+      2        1.6642        1.3658  19.7746
+      3        0.5318        0.3594  20.1495
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.028 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.3053        1.0578  20.6867
+      2        0.3510        0.2196  19.6468
+      3        0.2670       15.3535  19.6071
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.159 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.3631        0.2865  19.5241
+      2        0.1552        0.0943  19.5751
+      3        0.0948        0.0623  19.6544
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.343 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.4735        0.9690  19.5696
+      2        0.2263        0.1352  19.6236
+      3        0.1264        0.0570  19.6127
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.285 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.3137        5.0742  19.5823
+      2        0.1736       54.8975  19.6268
+      3        0.1108        0.0442  19.6211
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.265 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.0784      278.0358  19.4699
+      2        0.3317       33.7546  19.5358
+      3        0.1700        0.5810  19.5887
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.221 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.8827       79.4677  19.5059
+      2        0.2746       28.6891  19.5808
+      3        0.1601        0.1936  19.5769
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.245 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.5208        0.4742  19.5861
+      2        0.2515        0.1101  19.6328
+      3        0.1394        0.0492  19.6101
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.251 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.4830        0.7140  19.4940
+      2        0.1764       49.3088  19.6068
+      3        0.1135        1.6850  19.5508
+[CV 1/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.027 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.3057      992.7860  19.5612
+      2        0.1490       34.6248  19.5741
+      3        0.0633        0.0971  19.6143
+[CV 2/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.290 total time= 1.0min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.3153     3541.5376  19.5334
+      2        0.6079        0.1433  19.6245
+      3        0.1767        0.0888  19.6342
+[CV 3/3] END module__num_conv_layer=1, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.144 total time= 1.0min
+  epoch    train_loss     valid_loss      dur
+-------  ------------  -------------  -------
+      1     1191.8350  64016751.2778  21.7011
+      2      265.9249     1619.4811  21.4173
+      3      115.8680     7977.0909  21.3928
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      246.5157     5797.5710  21.4035
+      2    43516.9326    48424.0647  21.4535
+      3   684052.8949  3544628401.0213  21.4588
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1     2853.2215      513.7227  21.4519
+      2        6.6689     3750.4302  21.5003
+      3      428.4711  7310264.9811  21.4745
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1     6672.2596     6393.0559  21.4106
+      2        3.7863        5.1356  21.4147
+      3        3.6583        5.5944  21.4331
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       51.3022   251726.5225  21.4262
+      2     3646.0765  1222129883963.9148  21.4556
+      3   378943.0910  130741633905250.0469  21.4494
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1     5798.9343    13133.8279  21.4203
+      2        1.9368      231.5078  21.4690
+      3        1.4920      115.8856  21.5041
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      500.0856    94425.9098  21.3913
+      2        1.3987      259.9755  21.4312
+      3    13641.7666  1275724214527869.2500  21.4149
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1    12555.3370     1635.3719  21.3998
+      2        6.3759       74.3001  21.4489
+      3        3.4360      143.1417  21.4516
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1    15826.2256        0.7434  21.4166
+      2        0.6038        0.5640  21.4990
+      3        0.5762        0.4509  21.4590
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       26.1058     3187.9948  21.3645
+      2        1.4673        6.4374  21.3978
+      3        0.6276        0.4470  21.3954
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.003 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       14.0249      192.5921  21.4237
+      2       12.3589        0.9156  21.4415
+      3        1.9268        0.4431  21.4266
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.005 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        3.4733        0.3864  21.4250
+      2       28.6053  24482052074.2128  21.4585
+      3    57948.3371  29079600.1390  21.4430
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       27.9361       60.1607  21.3343
+      2       12.6388  98797237.2766  21.3934
+      3      122.7490        1.5248  21.3539
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       10.9337        3.8506  21.4229
+      2     1089.2620  5290720.2340  21.4648
+      3    51941.2781  3166304838154.8936  21.4684
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss       valid_loss      dur
+-------  ------------  ---------------  -------
+      1       35.7535  3673733740.9362  21.4367
+      2     7715.0614  1412701.4468  21.4425
+      3    17061.7864  69403153.7062  21.4204
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      883.6632      859.5958  21.3281
+      2        2.7275        0.6486  21.3567
+      3        3.5234       63.9299  21.3393
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.002 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       67.7540      240.9749  21.4048
+      2        1.8659        0.4876  21.4379
+      3        1.4427        8.6679  21.4417
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.002 total time= 1.1min
+  epoch    train_loss            valid_loss      dur
+-------  ------------  --------------------  -------
+      1      100.8635  287050101273534.6250  21.3970
+      2  2760646.5334     7862.0058  21.4291
+      3    37692.4343     6380.5797  21.4103
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        4.2209        0.3478  21.3252
+      2        0.4729        0.3445  21.3856
+      3        0.3910        0.3396  21.4046
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.012 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.7724       77.8745  21.3722
+      2        0.6169        0.3505  21.4021
+      3        0.9800      966.4595  21.4226
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.000 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        2.1284    19990.6051  21.4095
+      2        0.8829        0.3358  21.5227
+      3        0.5375        0.3294  21.8156
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.027 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        3.1882        0.3607  22.2993
+      2        0.4031        0.3405  21.7158
+      3        0.3546        0.2948  21.5273
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.009 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        3.1679        0.5638  21.4213
+      2        0.9911        0.4823  21.4568
+      3        0.7480        0.5326  21.4409
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.022 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       11.7842        2.8579  21.4363
+      2        0.4108        0.2955  21.4866
+      3        0.3434        0.2551  21.5065
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.003 total time= 1.1min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.5799       43.5600  21.3787
+      2        0.9560        0.3419  21.7421
+      3        0.5513        0.3415  22.3017
+[CV 1/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.024 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        2.5142        1.9193  21.6666
+      2        0.4943        0.3266  21.9370
+      3        0.4778        0.5496  21.4919
+[CV 2/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.020 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        2.5790       35.0917  21.5353
+      2        0.8406        0.4529  22.2066
+      3        0.5343        0.3341  22.2563
+[CV 3/3] END module__num_conv_layer=2, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.014 total time= 1.2min
+  epoch    train_loss         valid_loss      dur
+-------  ------------  -----------------  -------
+      1    14383.1344  165368602972.5957  23.0495
+      2    96620.2819  46896512413.9574  23.6440
+      3  2798047327.6930  9347234653533489152.0000  22.6641
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      932.4450        1.0935  22.9825
+      2        0.8394        0.7319  23.0171
+      3        0.9777        0.6353  22.7894
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.001 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      273.8335      182.1346  22.4206
+      2        4.7946        1.0598  22.4254
+      3        0.5548        0.4080  22.4155
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=1;, score=0.002 total time= 1.2min
+  epoch     train_loss           valid_loss      dur
+-------  -------------  -------------------  -------
+      1  12694778.3577  73488050025755.2344  22.3249
+      2  2378293.7303     2278.0688  22.3475
+      3     3972.5529       61.3524  22.3304
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1     3075.1873        0.2939  22.3622
+      2        0.1177        0.0620  22.4088
+      3        0.0719        0.0447  22.4071
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.239 total time= 1.2min
+  epoch    train_loss         valid_loss      dur
+-------  ------------  -----------------  -------
+      1     3487.1877  172923024754.3830  22.3556
+      2  179703787.4059  1930586833867.9136  22.3628
+      3  1215290.7132  1034810156.0106  22.3423
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=2;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      178.6412  2161080.0256  22.3191
+      2   196812.0844  543961785922146.0625  22.3496
+      3    90035.9377       37.6382  22.3106
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1    42104.6115        4.1931  22.3957
+      2        1.0386        1.3649  22.4528
+      3        0.6087        0.6476  22.4510
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.002 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1    66240.7123      133.6598  22.3856
+      2        6.6896        0.4426  22.4326
+      3        4.2975        3.2917  22.4045
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=2, module__num_pool_layer=4;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1     1934.9357  2803295.6635  22.3074
+      2     2419.1022  1324567.8986  22.3096
+      3  65433999310.1939  141649705647082.2188  22.2810
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.000 total time= 1.2min
+  epoch    train_loss           valid_loss      dur
+-------  ------------  -------------------  -------
+      1      581.2611  31661291403917.6172  22.4353
+      2  13809514014549.6035  1553506830.6809  22.4938
+      3  3873105607.3780  10890871.0000  22.2719
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       90.7579      216.5125  22.1904
+      2   104786.6990    25317.2639  22.2231
+      3  30442916798.0944  11234424255771.2344  22.2412
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=1;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       97.6759      775.2382  22.1122
+      2      919.9764  1058706180.0851  22.1550
+      3  598479009118.2401  13539669635141022.0000  22.0913
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.2min
+  epoch    train_loss           valid_loss      dur
+-------  ------------  -------------------  -------
+      1       37.5900  29823740930614.4688  22.1722
+      2   121367.4147  26845341.7434  22.2053
+      3     2314.1196    56277.0869  22.1592
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.2min
+  epoch    train_loss     valid_loss      dur
+-------  ------------  -------------  -------
+      1    16866.3850  21441684.7660  22.1426
+      2  6428251.5845  280893002.8936  22.2288
+      3    76009.4082  244909623.1707  22.1482
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=2;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      265.3039    99462.7743  22.0630
+      2        1.4025     1818.9052  22.0600
+      3    11204.3632  75905166.4681  22.0688
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.000 total time= 1.2min
+  epoch    train_loss           valid_loss      dur
+-------  ------------  -------------------  -------
+      1     5037.1345  43566961872285.9609  22.1065
+      2      233.5995       57.8435  22.1166
+      3        1.2971        0.9585  22.1020
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.023 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        1.0687        0.3240  22.1386
+      2        0.3774        0.1945  22.1935
+      3        0.5186        0.3215  22.1892
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=4, module__num_pool_layer=4;, score=0.014 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        4.2160    80069.1201  22.0742
+      2        0.4717        0.3452  22.1132
+      3        0.3884        0.3405  22.1006
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.031 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      182.1946       99.9370  22.1398
+      2        0.4259        0.3266  22.1436
+      3        0.3937        0.3220  22.1402
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.004 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1       16.1203        0.8668  22.0881
+      2        0.4043        0.3576  22.1265
+      3        0.3731        0.2722  22.1430
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=1;, score=0.011 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      177.4823    61028.6119  22.1125
+      2        8.9832        0.7952  22.1050
+      3        1.2074        0.8403  22.1006
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.003 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        5.0154     2377.9282  22.1356
+      2        0.5614        0.3189  22.1477
+      3        0.3793        0.2543  22.1820
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.059 total time= 1.2min
+  epoch    train_loss     valid_loss      dur
+-------  ------------  -------------  -------
+      1     5232.4428  10116980.5452  22.1649
+      2       31.0540        0.7872  22.2081
+      3        0.4579        0.5201  22.1783
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=2;, score=0.001 total time= 1.2min
+  epoch    train_loss       valid_loss      dur
+-------  ------------  ---------------  -------
+      1       76.7495  5662318178.0426  22.0441
+      2     7995.1525  4123398.7979  22.0708
+      3       54.9594        0.8108  22.0231
+[CV 1/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.000 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1      663.1351        0.4736  22.1226
+      2        1.6382        1.0465  22.1655
+      3        0.4547        0.3292  22.1394
+[CV 2/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.028 total time= 1.2min
+  epoch    train_loss      valid_loss      dur
+-------  ------------  --------------  -------
+      1        4.3579  145961247.9814  22.1152
+      2      509.5647    38663.7613  22.1240
+      3        5.4903        0.3920  22.1308
+[CV 3/3] END module__num_conv_layer=6, module__num_fc_layer=6, module__num_pool_layer=4;, score=0.009 total time= 1.2min
+  epoch    train_loss    valid_loss      dur
+-------  ------------  ------------  -------
+      1        0.4180      690.6741  28.8341
+      2        0.1947        0.2745  28.8633
+      3        0.0938        0.0431  28.8420
